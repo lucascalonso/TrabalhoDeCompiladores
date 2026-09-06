@@ -43,8 +43,11 @@ enum TipoDeToken {
 };
 
 typedef struct {
+    char lexema[40];
     enum TipoDeToken tipo;
-    char lexema[100];
+    int linha;
 } Token;
+
+const char* tokenTypeToString(TipoDeToken tipo);
 
 #endif // TOKEN_H
