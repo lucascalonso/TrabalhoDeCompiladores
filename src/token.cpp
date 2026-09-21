@@ -1,4 +1,4 @@
-#include "Token.h"
+#include "../include/Token.h"
 
 const char* tokenTypeToString(TipoDeToken tipo) {
     switch (tipo) {

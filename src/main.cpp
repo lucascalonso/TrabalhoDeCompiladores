@@ -1,5 +1,5 @@
-#include "Token.h"
-#include "scanner.h"
+#include "../include/Token.h"
+#include "../include/scanner.h"
 #include <iostream>
 
 int main(){
@@ -12,7 +12,7 @@ int main(){
     while(true){
         Token token = scanner.nextToken();
         if(token.tipo == TOKEN_EOF) break;
-        std::cout << "Token: " << token.lexema << ", Tipo: " << tokenTypeToString(token.tipo) << ", Linha: " << token.linha << std::endl;
+        std::cout << "Token: " << token.lexema << " Tipo: " << tokenTypeToString(token.tipo) << " Linha: " << token.linha << std::endl;
     }
     return 0;
 }

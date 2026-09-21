@@ -1,9 +1,10 @@
-int x=1;
-/* Isto é um comentário multilinha
+/* 
+pulando algumas linhas 
+e vendo se gera tokens dentro de comentário
 */
-int y=2;
-if(x>=y){
-    y=x;
-}else{
-    x=y;
+int vetor[5]@ = {1, 2, 3, 4, 5};
+if(vetor[0] == 1) {
+    vetor[0] = 2;
+} else {
+    vetor[0] = 3;
 }
