@@ -91,7 +91,7 @@ Universidade Federal Fluminense (UFF)\\
 \end{abstract}
      
 \begin{resumo} 
-  O texto a seguir é um relatório detalhado sobre como o compilador foi construído. Desde o analisador léxico até a codificação na linguagem de máquina envolvendo a sua otimização. Nesse momento inicial, só será abordada a construção do analisador léxico da linguagem C- do livro do Louden.
+  O texto a seguir é um relatório detalhado sobre como o compilador foi construído. Desde o analisador léxico até a codificação na linguagem de máquina envolvendo a sua otimização. Nesse momento inicial, só será abordada a construção do analisador léxico da linguagem C- em \cite{LOUDEN}.
 \end{resumo}
 
 
@@ -110,13 +110,13 @@ O Bloco de Frente ou front-end corresponde ao processo de análise que correspon
 Inicialmente esse relatório conterá apenas a parte da análise léxica, mas a medida que o período for passando, outros componentes do compilador serão adicionados. 
 O capítulo 2 será referente ao analisador léxico, já o terceiro abordará o sintático, o quarto o semântico e por fim o quinto abordando o desenvolvimento do código alvo que o transforma no código de máquina otimizado.
 
-
+\newpage
 \section{Analisador Léxico} 
 
 \subsection{Uma breve descrição do que foi solicitado}
 
-Na primeira etapa do trabalho nos foi solicitado inicialmente escolher uma Linguagem de programação simplificada, sendo esse a linguagem C - do livro do Louden, definir um subconjunto de regras de produção e que através das expressões regulares geradas pudéssemos gerar um DFA mínimo sem que houvesse qualquer automatização gerada por qualquer tipo de ferramenta. Além disso, tinhamos que gerar o analisador léxico juntamente com um Scanner para todos os Tokens da BNF escolhida.  
-Foi decidido que o scanner seria capaz de ler todas as palavras reservadas e especiais da linguagem proposta pelo Livro do Louden.
+Na primeira etapa do trabalho nos foi solicitado inicialmente escolher uma Linguagem de programação simplificada, sendo esse a linguagem C - por \cite{LOUDEN}, definir um subconjunto de regras de produção e que através das expressões regulares geradas pudéssemos gerar um DFA mínimo sem que houvesse qualquer automatização gerada por qualquer tipo de ferramenta. Além disso, tinhamos que gerar o analisador léxico juntamente com um Scanner para todos os Tokens da BNF escolhida.  
+Foi decidido que o scanner seria capaz de ler todas as palavras reservadas e especiais da linguagem proposta por \cite{LOUDEN}.
 
 \subsection{DFA minimizado e Matriz de Transição}
 
@@ -338,7 +338,35 @@ Todos os dígitos numéricos de 0 a 9.\newline
 $! / > / <$: Operadores relacionais simples que podem compor operadores duplos com $=$ (gerando $q_{NOTEQUAL}$, $q_{MAIORIGUAL}$, etc.).\newline
 Outros: Delimitadores e operadores de caractere único ($+, -, ,, ;, (, ), [, ], \{, \}$) cujas transições a partir de $q_0$ levam diretamente ao seu estado final individual e geram erro em outros estados.
 
-\subsection{O Scanner}
+\subsection{Funcionamento do \texttt{Scanner}}
+
+A classe \textit{Scanner} é responsável por converter a sequência de caracteres do código-fonte em uma representação estruturada de \textit{tokens}. A implementação gerencia um \textit{buffer} de memória contendo todo o arquivo lido.
+
+\subsubsection{Fluxo de Reconhecimento e Algoritmo \textit{Maximal Munch}}
+
+O reconhecimento dos \textit{tokens} é conduzido pelo método \texttt{nextToken()}, que opera através da simulação do DFA pela matriz de transição. 
+O algoritmo segue a estratégia \textit{Maximal Munch}, cujo funcionamento é descrito a seguir:
+
+\begin{enumerate}
+    \item \textbf{Descarte de Espaços em Branco:} Antes do processamento de cada \textit{token}, o método \texttt{skipWhitespace()} consome espaços, tabulações e quebras de linha, atualizando o contador global de linhas (\texttt{line}).
+    
+    \item \textbf{Transição de Estados e Aceitação:} À medida que os caracteres são lidos via \texttt{peek()} e consumidos via \texttt{advance()}, o autômato navega entre os estados. 
+    A cada estado final atingido (verificado por \texttt{isAcceptingState()}), o analisador armazena o estado, o lexema e a posição atual nos atributos 
+    \texttt{ultimoEstadoAceitacao}, \texttt{ultimoLexemaAceito} e \texttt{ultimaPosicaoAceitacao}.
+    
+    \item \textbf{Parada:} A leitura prossegue até que ocorra o fim do arquivo (\texttt{EOF}). Foi decidido que os 
+    \textit{tokens} de erro não devem ser descartados nem parar o processo de análise léxica, de forma a permitir a detecção de múltiplos erros em uma única execução.
+\end{enumerate}
+
+\subsubsection{Tratamento de Casos Especiais e Erros}
+
+\begin{itemize}
+    \item \textbf{Comentários em Bloco:} Como a matriz de transição não possui colunas para delimitadores de espaço, os estados de comentário ($Q_{/\star}$ e $Q_{/\star\star}$) recebem tratamento especial em \texttt{isCommentState()}. Espaços e quebras de linha dentro de comentários são consumidos diretamente sem interromper o processamento.
+    
+    \item \textbf{Palavras Reservadas vs. Identificadores:} Estados intermediários no reconhecimento de palavras-chave (como $Q_I$ ou $Q_{IN}$) também são considerados estados de aceitação mapeados para \texttt{TOKEN\_IDENTIFIER}. Se a sequência for interrompida antes de completar a palavra reservada (por exemplo, \texttt{retur}), o autômato aceita o prefixo como um identificador válido.
+    
+    \item \textbf{Tratamento de Erros Léxicos:} Caso o autômato encontre um caractere inválido ou um prefixo sem estado de aceitação (como um operador de exclamação \texttt{!} isolado), é retornado um \textit{token} do tipo \texttt{TOKEN\_ERROR} contendo o lexema com falha e a linha de ocorrência.
+\end{itemize}
 
 \subsection{FLEX gerado da BNF}
 
@@ -429,12 +457,14 @@ Para averiguar o analisador léxico foram utilizadas 4 instâncias corretas e 4 
 
 \subsection{Resultados obtidos pelo nosso analisador comparado com o scanner gerado pelo FLEX}
 
-Os programas para testes estão sendo exibidos no Appendix A, tanto os testes que não possuem quanto os que possuem erros léxicos estão presentes. Já no anexo B encontra-se os resultados obtidos pelo scanner gerado pelo Flex e o C contendo o nosso Scanner.
+Os programas para testes podem ser encontrados no Appendix A. Testes e inválidos estão presentes. Já no anexo B encontra-se os resultados obtidos pelo scanner gerado pelo Flex e o C contendo o nosso Scanner.
 
 \subsection{Conclusão}
 
-Essa pequena história nos mostra que por mais que tentemos escolher o que é considerado o certo, sempre irão ocorrer situações que nos posicionam fora da nossa zona de conforto, colocando a prova nossos valores morais, nos forçando fazer escolhas que são necessárias e que irão definir nosso futuro, nos mostrando que nem sempre vamos poder escolher fazer o certo, mas ter de escolher fazer o necessário, por mais difícil que seja. Várias situações parecidas são postas a nós todos os dias, porém com diferentes magnitudes, o modo como nos portamos diante dessas decisões é o que nos define.
-
+A análise Léxica é apenas o primeiro passo para o desenvolvimento do compilador. 
+Conseguimos gerar os tokens para todas as palavras reservadas e caracteres especiais da linguagem C- do \cite{LOUDEN} ao ler a expressão 
+regular representada pelas linhas de código de um programa em C- qualquer. O fato de todas os tipos de tokens terem sido feitos corretamente
+é um grande passo para a produção de um analisador sintático capaz de gerar todas as regras da BNF no futuro.
 
 \bibliographystyle{sbc}
 \bibliography{sbc-template}
@@ -442,9 +472,6 @@ Essa pequena história nos mostra que por mais que tentemos escolher o que é co
 \newpage
 
 \section{Anexos do experimento Envolvendo o Analisador Léxico.}
-
-Agora será exibido abaixo as instâncias usadas para os experimentos.
-
 
 \begin{appendices}
   % Se o seu documento usa \section (como a classe article)
