@@ -154,6 +154,18 @@ Token Scanner::nextToken() {
     }
 
     /*
+     * Comentário aberto até o fim do arquivo: o laço só termina em estado de
+     * comentário quando o arquivo acaba antes do fechamento. Sem este teste,
+     * o scanner voltava ao último estado de aceitação (q_/, a divisão) e
+     * reescaneava o conteúdo do comentário como se fosse código.
+     */
+    if (isCommentState(estado)) {
+        Token token = makeError(lexema);
+        token.linha = static_cast<int>(startLine);
+        return token;
+    }
+
+    /*
      * Não houve nenhum estado final.
      *
      * Exemplo: "!" sozinho. A matriz leva q0 -> q_!, mas q_! não é
