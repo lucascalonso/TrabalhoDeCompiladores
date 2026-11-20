@@ -1,165 +1,288 @@
 #include "../include/Parser.h"
-#include "../include/TabelaLL1.h"
 
-#include <iostream>
+#include <algorithm>
 #include <string>
 #include <utility>
 
 namespace {
 
-// Nome do terminal para mensagens: "$" aparece como "fim de arquivo".
-std::string nomeDoTerminal(int coluna) {
-    const std::string nome = NOME_TERMINAL[coluna];
+// Terminal (valor de Simbolo) -> coluna da matriz.
+int colunaDoSimbolo(int simbolo) { return simbolo - NUM_NAO_TERMINAIS; }
+
+// Terminal entre aspas para mensagens; $ aparece como "fim de arquivo".
+std::string terminalEntreAspas(int simbolo) {
+    const std::string nome = NOME_TERMINAL[colunaDoSimbolo(simbolo)];
     return nome == "$" ? "fim de arquivo" : "'" + nome + "'";
 }
 
-// Simbolo (terminal) -> indice da coluna da matriz.
-int colunaDoSimbolo(int simbolo) { return simbolo - NUM_NAO_TERMINAIS; }
+// Texto do corpo de uma producao, para a coluna de acao.
+std::string corpoDaProducao(const Producao& p) {
+    if (p.tamanho == 0) return "vazio";
+    std::string s;
+    for (int i = 0; i < p.tamanho; ++i) {
+        if (i > 0) s += ' ';
+        s += nomeDoSimbolo(p.corpo[i]);
+    }
+    return s;
+}
 
-// Nome de qualquer simbolo, para o modo -v e nos da arvore.
+// Rotulo de um no para a arvore: terminais entre aspas duplas (ID e NUM mostram o lexema).
+std::string rotuloDoNo(const No& n) {
+    if (n.simbolo == SIMBOLO_EPSILON) return "epsilon";
+    if (ehNaoTerminal(n.simbolo)) return NOME_NAO_TERMINAL[n.simbolo];
+    const std::string nome = NOME_TERMINAL[colunaDoSimbolo(n.simbolo)];
+    if (n.simbolo == T_IDENTIFIER || n.simbolo == T_NUMBER) return nome + " \"" + n.lexema + "\"";
+    return "\"" + nome + "\"";
+}
+
+std::string escapaDot(const std::string& s) {
+    std::string r;
+    for (char c : s) {
+        if (c == '"' || c == '\\') r += '\\';
+        r += c;
+    }
+    return r;
+}
+
+} // namespace
+
 std::string nomeDoSimbolo(int simbolo) {
+    if (simbolo == SIMBOLO_EPSILON) return "epsilon";
     if (ehNaoTerminal(simbolo)) return NOME_NAO_TERMINAL[simbolo];
     return NOME_TERMINAL[colunaDoSimbolo(simbolo)];
 }
 
-// Acima deste numero de tokens possiveis, a mensagem deixa de listar o que era esperado.
-const int MAX_ESPERADOS_NA_MENSAGEM = 8;
-
-} // namespace
-
-Parser::Parser(Scanner& scanner, bool verbose) : scanner_(scanner), verbose_(verbose) {}
-
-// Proximo token do scanner, descartando comentarios (o scanner os devolve como TOKEN_COMMENT).
-void Parser::advance() {
-    do {
-        cur_ = scanner_.nextToken();
-    } while (cur_.tipo == TOKEN_COMMENT);
+// Destruicao sem recursao: move os filhos para uma lista de pendentes e vai soltando um a um.
+No::~No() {
+    std::vector<std::unique_ptr<No>> pendentes;
+    for (auto& f : filhos) pendentes.push_back(std::move(f));
+    filhos.clear();
+    while (!pendentes.empty()) {
+        std::unique_ptr<No> n = std::move(pendentes.back());
+        pendentes.pop_back();
+        for (auto& f : n->filhos) pendentes.push_back(std::move(f));
+        n->filhos.clear();
+    }
 }
 
-// Desempilha ja foi feito por quem chama; aqui so empilha o corpo, de tras para frente,
-// para que o primeiro simbolo do corpo fique no topo. Producao vazia nao empilha nada.
-void Parser::empilhaProducao(int numero) {
-    const Producao& p = PRODUCOES[numero];
-    for (int i = p.tamanho - 1; i >= 0; --i) pilha_.push_back(p.corpo[i]);
-}
+// ============================================================ analise
 
-void Parser::imprimirArvore(const NoArvore* no, const std::string& prefixo, bool ultimo) const {
-    if (!no) return;
-    std::cout << prefixo << (ultimo ? "`-- " : "|-- ") << no->rotulo << '\n';
-    const std::string novoPrefixo = prefixo + (ultimo ? "  " : "| ");
-    for (std::size_t i = 0; i < no->filhos.size(); ++i) {
-        imprimirArvore(no->filhos[i].get(), novoPrefixo, i + 1 == no->filhos.size());
+Parser::Parser(const std::vector<Token>& tokens, ModoEntrada modo, bool registrarPassos)
+    : tokens_(tokens), modo_(modo), registrar_(registrarPassos) {
+    if (tokens_.empty() || tokens_.back().tipo != TOKEN_EOF) {
+        Token eof{};
+        eof.tipo = TOKEN_EOF;
+        eof.linha = tokens_.empty() ? 1 : tokens_.back().linha;
+        tokens_.push_back(eof);
     }
 }
 
 std::string Parser::encontrado() const {
-    if (cur_.tipo == TOKEN_EOF) return "fim de arquivo";
-    return std::string("'") + cur_.lexema + "'";
+    const Token& t = tokens_[pos_];
+    if (t.tipo == TOKEN_EOF) return "fim de arquivo";
+    return std::string("'") + t.lexema + "'";
 }
 
-// Token que o scanner nao reconheceu (TOKEN_ERROR): nao tem coluna na matriz.
-void Parser::erroLexico() const {
-    const std::string lex = cur_.lexema;
-    std::string msg = "linha " + std::to_string(cur_.linha) + ": erro lexico: ";
-    if (lex.compare(0, 2, "/*") == 0) msg += "comentario nao terminado";
-    else                              msg += "sequencia invalida '" + lex + "'";
-    throw ParseError(msg);
-}
+// Registra a configuracao atual (pilha, entrada restante) junto com a acao que sera executada.
+void Parser::registra(const std::string& acao) {
+    if (!registrar_) return;
 
-// Topo da pilha e um terminal diferente do token atual.
-void Parser::erroTerminal(int colunaEsperada) const {
-    throw ParseError("linha " + std::to_string(cur_.linha) + ": esperado " +
-                     nomeDoTerminal(colunaEsperada) + ", encontrado " + encontrado());
-}
+    Passo p;
+    p.numero = static_cast<int>(passos_.size()) + 1;
 
-// Celula vazia da matriz: a propria linha diz quais tokens seriam aceitos agora.
-void Parser::erroNaoTerminal(int linhaDaMatriz) const {
-    std::vector<int> esperados;
-    for (int c = 0; c < NUM_COLUNAS_LL1; ++c)
-        if (MATRIZ_LL1[linhaDaMatriz][c] != ERRO_LL1) esperados.push_back(c);
-
-    std::string msg = "linha " + std::to_string(cur_.linha) + ": ";
-    if (esperados.empty() || static_cast<int>(esperados.size()) > MAX_ESPERADOS_NA_MENSAGEM) {
-        msg += "token inesperado " + encontrado();
-    } else {
-        msg += "esperado ";
-        for (std::size_t i = 0; i < esperados.size(); ++i) {
-            if (i > 0) msg += (i + 1 == esperados.size()) ? " ou " : ", ";
-            msg += nomeDoTerminal(esperados[i]);
-        }
-        msg += ", encontrado " + encontrado();
+    for (auto it = pilha_.rbegin(); it != pilha_.rend(); ++it) {     // topo primeiro
+        if (!p.pilha.empty()) p.pilha += ' ';
+        p.pilha += nomeDoSimbolo(it->simbolo);
     }
-    throw ParseError(msg);
+    for (std::size_t i = pos_; i < tokens_.size() && tokens_[i].tipo != TOKEN_EOF; ++i) {
+        p.entrada += tokens_[i].lexema;
+        p.entrada += ' ';
+    }
+    p.entrada += '$';
+
+    p.acao = acao;
+    passos_.push_back(std::move(p));
 }
 
-void Parser::parse() {
+bool Parser::falha(int codigo, const std::string& mensagem) {
+    codigoErro_ = codigo;
+    mensagemErro_ = "linha " + std::to_string(tokens_[pos_].linha) + ": erro E" +
+                    std::to_string(codigo) + ": " + mensagem;
+    registra("ERRO E" + std::to_string(codigo) + ": " + mensagem);
+    return false;
+}
+
+bool Parser::parse() {
     pilha_.clear();
-    pilha_.push_back(T_EOF);           // marcador de fim
-    pilha_.push_back(NT_PROGRAM);      // simbolo inicial
+    passos_.clear();
+    raiz_.reset();
+    pos_ = 0;
+    codigoErro_ = 0;
+    mensagemErro_.clear();
 
-    auto raiz = std::make_unique<NoArvore>(NoArvore{"program", {}});
-    std::vector<NoArvore*> pilhaNos = { nullptr, raiz.get() }; // paralela a pilha_
-
-    advance();                         // carrega o primeiro token de lookahead
+    const int inicial = (modo_ == ModoEntrada::Programa) ? NT_PROGRAM : NT_EXPRESSION;
+    raiz_.reset(new No(inicial));
+    pilha_.push_back({T_EOF, nullptr});             // marcador de fim
+    pilha_.push_back({inicial, raiz_.get()});       // simbolo inicial no topo
 
     while (!pilha_.empty()) {
-        const int topo = pilha_.back();
+        const Item topo = pilha_.back();
+        const Token& tok = tokens_[pos_];
 
-        const int coluna = colunaLL1(cur_.tipo);
-        if (coluna < 0) erroLexico();  // TOKEN_ERROR
+        // Token que o scanner nao reconheceu: nao tem coluna na matriz.
+        const int coluna = colunaLL1(tok.tipo);
+        if (coluna < 0) {
+            const std::string lex = tok.lexema;
+            return falha(ERRO_LEXICO, lex.compare(0, 2, "/*") == 0
+                                          ? std::string("comentario nao terminado")
+                                          : "sequencia invalida '" + lex + "'");
+        }
 
-        if (!ehNaoTerminal(topo)) {
-            // ---- terminal: casa com o token atual ----
-            if (colunaDoSimbolo(topo) != coluna) erroTerminal(colunaDoSimbolo(topo));
+        if (!ehNaoTerminal(topo.simbolo)) {
+            // ---------- terminal no topo: tem de casar com o token atual ----------
+            if (colunaDoSimbolo(topo.simbolo) != coluna)
+                return falha(ERRO_TERMINAL, "esperado " + terminalEntreAspas(topo.simbolo) +
+                                            ", encontrado " + encontrado());
 
-            NoArvore* noAtual = pilhaNos.back();
-            pilhaNos.pop_back();
-            if (noAtual && (cur_.tipo == TOKEN_IDENTIFIER || cur_.tipo == TOKEN_NUMBER)) {
-                noAtual->rotulo += " (" + std::string(cur_.lexema) + ")";
+            if (topo.simbolo == T_EOF) {
+                registra("aceitar: entrada reconhecida");
+                pilha_.pop_back();
+                break;
             }
 
-            if (verbose_) {
-                std::cout << "match " << nomeDoTerminal(coluna);
-                if (cur_.tipo == TOKEN_IDENTIFIER || cur_.tipo == TOKEN_NUMBER)
-                    std::cout << " (" << cur_.lexema << ")";
-                std::cout << '\n';
-            }
+            std::string acao = "casar " + nomeDoSimbolo(topo.simbolo);
+            if (topo.simbolo == T_IDENTIFIER || topo.simbolo == T_NUMBER) acao += std::string(" (") + tok.lexema + ")";
+            registra(acao);
+
+            topo.no->lexema = tok.lexema;
+            topo.no->linha = tok.linha;
             pilha_.pop_back();
-            if (topo != T_EOF) advance();
+            ++pos_;
         } else {
-            // ---- nao-terminal: consulta a matriz ----
-            const unsigned int numero = MATRIZ_LL1[topo][coluna];
-            if (numero == ERRO_LL1) erroNaoTerminal(topo);
+            // ---------- nao-terminal no topo: consulta a matriz ----------
+            // No modo expressao nao ha ';' no fim: o fim da entrada e consultado como ';'.
+            const int colunaConsulta = (modo_ == ModoEntrada::Expressao && tok.tipo == TOKEN_EOF)
+                                           ? colunaLL1(TOKEN_SEMICOLON)
+                                           : coluna;
+            const unsigned int celula = MATRIZ_LL1[topo.simbolo][colunaConsulta];
 
-            const Producao& p = PRODUCOES[numero];
-            if (verbose_) {
-                std::cout << "[" << numero << "] " << NOME_NAO_TERMINAL[topo] << " ->";
-                if (p.tamanho == 0) std::cout << " vazio";
-                for (int i = 0; i < p.tamanho; ++i) std::cout << ' ' << nomeDoSimbolo(p.corpo[i]);
-                std::cout << '\n';
+            if (ehErro(celula)) {
+                const int codigo = codigoDoErro(celula);
+                return falha(codigo, std::string(MENSAGEM_ERRO[codigo]) + ", encontrado " + encontrado());
             }
 
-            NoArvore* pai = pilhaNos.back();
-            pilhaNos.pop_back();
+            const Producao& p = PRODUCOES[celula];
+            registra("aplicar [" + std::to_string(celula) + "] " + NOME_NAO_TERMINAL[topo.simbolo] +
+                     " -> " + corpoDaProducao(p));
 
-            if (p.tamanho > 0) {
-                std::vector<NoArvore*> novosFilhos(p.tamanho);
-                for (int i = 0; i < p.tamanho; ++i) {
-                    auto filho = std::make_unique<NoArvore>(NoArvore{nomeDoSimbolo(p.corpo[i]), {}});
-                    novosFilhos[i] = filho.get();
-                    pai->filhos.push_back(std::move(filho));
-                }
-                for (int i = p.tamanho - 1; i >= 0; --i) {
-                    pilhaNos.push_back(novosFilhos[i]);
-                }
-            }
-
+            // Cria os filhos do no (na ordem do corpo) e empilha de tras para frente.
+            No* pai = topo.no;
             pilha_.pop_back();
-            empilhaProducao(static_cast<int>(numero));
+            if (p.tamanho == 0) {
+                pai->filhos.emplace_back(new No(SIMBOLO_EPSILON));
+            } else {
+                for (int i = 0; i < p.tamanho; ++i) pai->filhos.emplace_back(new No(p.corpo[i]));
+                for (int i = p.tamanho - 1; i >= 0; --i) pilha_.push_back({p.corpo[i], pai->filhos[i].get()});
+            }
         }
     }
+    return true;
+}
 
-    std::cout << "\n--- Arvore de Analise Sintatica ---\n";
-    imprimirArvore(raiz.get());
-    std::cout << '\n';
+// ============================================================ saidas
+
+void Parser::imprimirPassos(std::ostream& os) const {
+    std::size_t wPilha = 5, wEntrada = 7;     // largura minima: "Pilha", "Entrada"
+    for (const Passo& p : passos_) {
+        wPilha = std::max(wPilha, p.pilha.size());
+        wEntrada = std::max(wEntrada, p.entrada.size());
+    }
+    const std::size_t wNum = std::max<std::size_t>(5, std::to_string(passos_.size()).size());
+
+    auto linha = [&](const std::string& num, const std::string& pilha, const std::string& entrada,
+                     const std::string& acao) {
+        os << std::string(wNum - std::min(wNum, num.size()), ' ') << num << " | "
+           << pilha << std::string(wPilha - std::min(wPilha, pilha.size()), ' ') << " | "
+           << entrada << std::string(wEntrada - std::min(wEntrada, entrada.size()), ' ') << " | "
+           << acao << '\n';
+    };
+    linha("Passo", "Pilha", "Entrada", "Acao");
+    os << std::string(wNum, '-') << "-+-" << std::string(wPilha, '-') << "-+-"
+       << std::string(wEntrada, '-') << "-+-" << std::string(20, '-') << '\n';
+    for (const Passo& p : passos_) linha(std::to_string(p.numero), p.pilha, p.entrada, p.acao);
+}
+
+// Arvore em ASCII, percorrida com pilha propria (sem recursao).
+void Parser::imprimirArvore(std::ostream& os) const {
+    if (!raiz_) return;
+    struct Quadro {
+        const No* no;
+        std::string prefixo;     // texto que vem antes do conector
+        bool ultimo;             // e o ultimo filho do pai?
+        bool ehRaiz;
+    };
+    std::vector<Quadro> pilha;
+    pilha.push_back({raiz_.get(), "", true, true});
+    while (!pilha.empty()) {
+        Quadro q = std::move(pilha.back());
+        pilha.pop_back();
+
+        std::string filhosPrefixo;
+        if (q.ehRaiz) {
+            os << rotuloDoNo(*q.no) << '\n';
+        } else {
+            os << q.prefixo << (q.ultimo ? "`-- " : "|-- ") << rotuloDoNo(*q.no) << '\n';
+            filhosPrefixo = q.prefixo + (q.ultimo ? "    " : "|   ");
+        }
+        const auto& f = q.no->filhos;
+        for (std::size_t i = f.size(); i-- > 0;)
+            pilha.push_back({f[i].get(), filhosPrefixo, i + 1 == f.size(), false});
+    }
+}
+
+void Parser::exportarDot(std::ostream& os) const {
+    os << "digraph arvore {\n"
+       << "    ordering=out;\n"
+       << "    node [fontname=\"Helvetica\"];\n";
+    if (!raiz_) { os << "}\n"; return; }
+
+    int proximoId = 0;
+    std::vector<std::pair<const No*, int>> pilha;
+    pilha.push_back({raiz_.get(), proximoId++});
+    std::string arestas;
+    while (!pilha.empty()) {
+        const auto [no, id] = pilha.back();
+        pilha.pop_back();
+
+        std::string rotulo = rotuloDoNo(*no);
+        std::string estilo;
+        if (no->simbolo == SIMBOLO_EPSILON) estilo = "shape=plaintext";
+        else if (ehNaoTerminal(no->simbolo)) estilo = "shape=ellipse";
+        else estilo = "shape=box, style=filled, fillcolor=\"#DDEBF7\"";
+        os << "    n" << id << " [label=\"" << escapaDot(rotulo) << "\", " << estilo << "];\n";
+
+        std::vector<std::pair<const No*, int>> filhos;
+        for (const auto& f : no->filhos) {
+            const int fid = proximoId++;
+            arestas += "    n" + std::to_string(id) + " -> n" + std::to_string(fid) + ";\n";
+            filhos.push_back({f.get(), fid});
+        }
+        for (std::size_t i = filhos.size(); i-- > 0;) pilha.push_back(filhos[i]);
+    }
+    os << arestas << "}\n";
+}
+
+void Parser::estatisticasArvore(int& nos, int& folhas, int& altura) const {
+    nos = folhas = altura = 0;
+    if (!raiz_) return;
+    std::vector<std::pair<const No*, int>> pilha;
+    pilha.push_back({raiz_.get(), 1});
+    while (!pilha.empty()) {
+        const auto [no, nivel] = pilha.back();
+        pilha.pop_back();
+        ++nos;
+        altura = std::max(altura, nivel);
+        if (no->filhos.empty()) ++folhas;
+        for (const auto& f : no->filhos) pilha.push_back({f.get(), nivel + 1});
+    }
 }

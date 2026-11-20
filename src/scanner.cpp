@@ -31,6 +31,14 @@ bool Scanner::loadFile(const std::string& filename) {
     return true;
 }
 
+bool Scanner::loadString(const std::string& text) {
+    buffer = text;
+    position = 0;
+    line = 1;
+
+    return true;
+}
+
 void Scanner::reset() {
     position = 0;
     line = 1;

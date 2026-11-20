@@ -36,6 +36,7 @@ class Scanner{
     public:
         static Scanner &getInstance();
         bool loadFile(const std::string &filename);
+        bool loadString(const std::string &text);
         Token nextToken();
         void reset();
     };
