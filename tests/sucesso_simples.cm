@@ -1,0 +1,17 @@
+/* Programa C- válido e sem erros de sintaxe (Estrutura Simples) */
+
+int globalX;
+int vetor[10];
+
+void main(void) {
+    int localY;
+    
+    globalX = 5;
+    localY = 10;
+    
+    if (globalX <= localY) {
+        globalX = localY;
+    } else {
+        localY = 0;
+    }
+}

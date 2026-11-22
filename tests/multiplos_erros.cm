@@ -1,0 +1,20 @@
+/* Programa com erros sintáticos para testar o compilador */
+
+int calcular(int valor) {
+    int resultado;
+    
+    /* ERRO 1: A regra 'var_declaracao' (Regra 4) exige ponto e vírgula no final */
+    resultado = valor * 2
+    
+    return resultado;
+}
+
+void main(void) {
+    int x;
+    x = 10;
+    
+    /* ERRO 2: A estrutura do 'if' (Regra 15) não permite a palavra 'then' na gramática do Louden */
+    if (x > 5) then {
+        calcular(x);
+    }
+}

@@ -1,0 +1,23 @@
+/* Programa C- válido e sem erros de sintaxe (Estrutura Avançada) */
+
+int mdc(int u, int v) {
+    if (v == 0) {
+        return u;
+    } else {
+        return mdc(v, u - u / v * v);
+    }
+}
+
+void main(void) {
+    int x;
+    int y;
+    int resultado;
+    
+    x = 72;
+    y = 24;
+    
+    while (x > 0) {
+        resultado = mdc(x, y);
+        x = x - 1;
+    }
+}

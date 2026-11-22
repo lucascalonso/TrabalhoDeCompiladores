@@ -11,6 +11,7 @@ class Scanner{
         std::string buffer;
         std::size_t position;
         std::size_t line;
+        std::size_t lineStart; // posicao no buffer onde a linha atual comeca
 
         Scanner();
         Scanner(const Scanner&) = delete;

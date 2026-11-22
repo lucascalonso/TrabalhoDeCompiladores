@@ -46,6 +46,7 @@ typedef struct {
     char lexema[40];
     enum TipoDeToken tipo;
     int linha;
+    int coluna;
 } Token;
 
 const char* tokenTypeToString(TipoDeToken tipo);

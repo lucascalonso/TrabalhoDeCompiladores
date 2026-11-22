@@ -6,7 +6,7 @@
 #include <cctype>
 #include <string>
 
-Scanner::Scanner() : position(0), line(1) {}
+Scanner::Scanner() : position(0), line(1), lineStart(0) {}
 
 Scanner& Scanner::getInstance() {
     static Scanner instance;
@@ -27,6 +27,7 @@ bool Scanner::loadFile(const std::string& filename) {
 
     position = 0;
     line = 1;
+    lineStart = 0;
 
     return true;
 }
@@ -34,6 +35,7 @@ bool Scanner::loadFile(const std::string& filename) {
 void Scanner::reset() {
     position = 0;
     line = 1;
+    lineStart = 0;
 }
 
 char Scanner::peek() const {
@@ -64,6 +66,7 @@ void Scanner::skipWhitespace() {
         } else if (c == '\n') {
             advance();
             ++line;
+            lineStart = position;
         } else {
             break;
         }
@@ -81,7 +84,8 @@ Token Scanner::makeToken(TipoDeToken tipo, const std::string& lexema) {
     );
 
     token.lexema[sizeof(token.lexema) - 1] = '\0';
-    token.linha = line;
+    token.linha = static_cast<int>(line);
+    token.coluna = static_cast<int>(position - lineStart) + 1;
 
     return token;
 }
@@ -99,6 +103,7 @@ Token Scanner::nextToken() {
 
     const std::size_t startPosition = position;
     const std::size_t startLine = line;
+    const int startColumn = static_cast<int>(startPosition - lineStart) + 1;
 
     Estado estado = Q_0;
     Estado ultimoEstadoAceitacao = Q_ERRO;
@@ -122,6 +127,7 @@ Token Scanner::nextToken() {
             lexema += advance();
             if (c == '\n') {
                 ++line;
+                lineStart = position;
             }
             // q_/** + caractere diferente de '*' e '/'
             // volta para q_/*
@@ -163,7 +169,10 @@ Token Scanner::nextToken() {
         // Caso nada tenha sido consumido, o caractere atual é o erro
         if (position == startPosition) {
             const char erro = advance();
-            return makeError(std::string(1, erro));
+            Token token = makeError(std::string(1, erro));
+            token.linha = static_cast<int>(startLine);
+            token.coluna = startColumn;
+            return token;
         }
 
         /*
@@ -172,6 +181,7 @@ Token Scanner::nextToken() {
          */
         Token token = makeError(lexema);
         token.linha = static_cast<int>(startLine);
+        token.coluna = startColumn;
         return token;
     }
 
@@ -198,6 +208,7 @@ Token Scanner::nextToken() {
 
     Token token = makeToken(tipo, lexema);
     token.linha = static_cast<int>(startLine);
+    token.coluna = startColumn;
 
     return token;
 }
