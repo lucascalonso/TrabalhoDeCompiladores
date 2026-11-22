@@ -233,10 +233,12 @@ bool Scanner::isAcceptingState(Estado estado) {
             return true;
 
         case Q_NUM:
+        case Q_FLOAT:
         case Q_MAIS:
         case Q_MENOS:
         case Q_ASTERISCO:
         case Q_BARRA:
+        case Q_EXPOENTE:
         case Q_COMMENT:
         case Q_ASSIGN:
         case Q_EQUAL:
@@ -297,10 +299,12 @@ TipoDeToken Scanner::tokenTypeFromState(Estado estado) {
             return TOKEN_IDENTIFIER;
 
         case Q_NUM:        return TOKEN_NUMBER;
+        case Q_FLOAT:      return TOKEN_FLOAT;
         case Q_MAIS:       return TOKEN_PLUS;
         case Q_MENOS:      return TOKEN_MINUS;
         case Q_ASTERISCO:  return TOKEN_MULTIPLY;
         case Q_BARRA:      return TOKEN_DIVIDE;
+        case Q_EXPOENTE:   return TOKEN_EXPONENT;
         case Q_COMMENT:    return TOKEN_COMMENT;
         case Q_ASSIGN:     return TOKEN_ASSIGN;
         case Q_EQUAL:      return TOKEN_EQUAL_EQUAL;

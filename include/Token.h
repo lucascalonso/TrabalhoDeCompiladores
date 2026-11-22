@@ -14,12 +14,14 @@ enum TipoDeToken {
     // Identificadores e números
     TOKEN_IDENTIFIER,
     TOKEN_NUMBER,
+    TOKEN_FLOAT,
 
     // Símbolos especiais
     TOKEN_PLUS,
     TOKEN_MINUS,
     TOKEN_MULTIPLY,
     TOKEN_DIVIDE,
+    TOKEN_EXPONENT,
     TOKEN_LESS,
     TOKEN_LESS_EQUAL,
     TOKEN_GREATER,

@@ -11,11 +11,13 @@ const char* tokenTypeToString(TipoDeToken tipo) {
 
         case TOKEN_IDENTIFIER:       return "TOKEN_IDENTIFIER";
         case TOKEN_NUMBER:           return "TOKEN_NUMBER";
+        case TOKEN_FLOAT:            return "TOKEN_FLOAT";
 
         case TOKEN_PLUS:             return "TOKEN_PLUS";
         case TOKEN_MINUS:            return "TOKEN_MINUS";
         case TOKEN_MULTIPLY:         return "TOKEN_MULTIPLY";
         case TOKEN_DIVIDE:           return "TOKEN_DIVIDE";
+        case TOKEN_EXPONENT:         return "TOKEN_EXPONENT";
         case TOKEN_LESS:             return "TOKEN_LESS";
         case TOKEN_LESS_EQUAL:       return "TOKEN_LESS_EQUAL";
         case TOKEN_GREATER:          return "TOKEN_GREATER";
