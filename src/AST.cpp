@@ -32,7 +32,7 @@ void imprimirAST(ASTNode* no, int nivel) {
         for (int i = 0; i < nivel; ++i) std::cout << "  ";
 
         if (no->kind == NODE_COMPOSTO) {
-            std::cout << "[Bloco] (Linha " << no->linha << ") {\n";
+            std::cout << "[Bloco] (Linha " << no->linha << ", escopo " << no->escopo << ") {\n";
             for (ASTNode* filho : no->filhos) {
                 imprimirAST(filho, nivel + 1);
             }
@@ -82,7 +82,7 @@ void imprimirAST(ASTNode* no, int nivel) {
             default:
                 break;
         }
-        std::cout << " (Linha " << no->linha << ")\n";
+        std::cout << " (Linha " << no->linha << ", escopo " << no->escopo << ")\n";
 
         for (ASTNode* filho : no->filhos) {
             imprimirAST(filho, nivel + 1);

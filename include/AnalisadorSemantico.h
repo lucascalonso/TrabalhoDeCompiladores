@@ -34,7 +34,7 @@ class AnalisadorSemantico {
         void analisarNum(ASTNode* no);
         void analisarCall(ASTNode* no);
 
-        int calcularOperacaoConstante(int op, int valor1, int valor2);
+        long long calcularOperacaoConstante(int op, long long valor1, long long valor2);
 
     public:
         AnalisadorSemantico();

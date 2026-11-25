@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include <vector>
+#include <climits>
 
 extern "C" {
   #include "yacc.tab.h"
@@ -57,7 +58,8 @@ static int distanciaLevenshtein(const std::string & s1,
 std::string AnalisadorSemantico::sugerirIdentificadorSimilar(const std::string & nome) const {
   auto visiveis = tabelaDeSimbolos.obterTodosSimbolosVisiveis();
   std::string melhorNome = "";
-  int menorDist = 3; // tolera até 2 caracteres de diferença
+  // nomes curtos sempre parecem proximos: so sugere com 3+ letras e 1 diferenca
+  int menorDist = nome.size() >= 3 ? 2 : 0;
 
   for (const auto & sym: visiveis) {
     int d = distanciaLevenshtein(nome, sym.nome);
@@ -127,6 +129,7 @@ void AnalisadorSemantico::analisar(ASTNode * raiz) {
 
 void AnalisadorSemantico::analisarNo(ASTNode * no) {
   if (!no) return;
+  no -> escopo = tabelaDeSimbolos.escopoAtual();
 
   switch (no -> kind) {
   case NODE_VAR_DECL:
@@ -173,16 +176,12 @@ void AnalisadorSemantico::analisarVarDecl(ASTNode * no) {
     reportarErro(no -> linha,
       "Variavel '" + no -> nome + "' nao pode ser declarada como 'void'.",
       "Altere o tipo da variavel para 'int' (ex: 'int " + no -> nome + ";').");
-    no -> tipo = TIPO_ERRO;
-    return;
   }
 
   if (no -> eh_array && no -> tamanho_array <= 0) {
     reportarErro(no -> linha,
       "Tamanho invalido (" + std::to_string(no -> tamanho_array) + ") para o vetor '" + no -> nome + "'.",
       "Informe um tamanho inteiro positivo maior que zero (ex: 'int " + no -> nome + "[10];').");
-    no -> tipo = TIPO_ERRO;
-    return;
   }
 
   SimboloInfo simbolo;
@@ -190,6 +189,8 @@ void AnalisadorSemantico::analisarVarDecl(ASTNode * no) {
   simbolo.categoria = no -> eh_array ? CAT_ARRAY : CAT_VAR;
   simbolo.tipo = no -> eh_array ? TIPO_INT_ARRAY : TIPO_INT;
   simbolo.linha_decl = no -> linha;
+  // declara mesmo assim (como erro) para nao gerar "nao declarada" depois
+  if (no -> tipo_decl == TIPO_VOID) simbolo.tipo = TIPO_ERRO;
 
   SimboloInfo * existente = tabelaDeSimbolos.buscarSimboloNoEscopoAtual(no -> nome);
   if (!tabelaDeSimbolos.adicionarSimbolo(simbolo)) {
@@ -246,7 +247,7 @@ void AnalisadorSemantico::analisarFunDecl(ASTNode * no) {
 
   param = (!no -> filhos.empty()) ? no -> filhos[0] : nullptr;
   while (param != nullptr) {
-    if (param -> tipo != TIPO_ERRO) {
+    {
       SimboloInfo paramSym;
       paramSym.nome = param -> nome;
       paramSym.categoria = param -> eh_array ? CAT_ARRAY : CAT_VAR;
@@ -259,6 +260,7 @@ void AnalisadorSemantico::analisarFunDecl(ASTNode * no) {
           "De nomes distintos a cada parametro da funcao.");
       }
     }
+    param -> escopo = tabelaDeSimbolos.escopoAtual();
     param = param -> irmao;
   }
 
@@ -285,6 +287,8 @@ void AnalisadorSemantico::analisarComposto(ASTNode * no) {
     tabelaDeSimbolos.entrarEscopo(nomeFuncaoAtual + ":bloco");
     abriuEscopo = true;
   }
+
+  no -> escopo = tabelaDeSimbolos.escopoAtual();  // escopo do proprio bloco
 
   ASTNode * decl = (!no -> filhos.empty()) ? no -> filhos[0] : nullptr;
   while (decl != nullptr) {
@@ -446,17 +450,24 @@ void AnalisadorSemantico::analisarOp(ASTNode * no) {
       no -> tipo = TIPO_ERRO;
       return;
     }
-    int resultado = calcularOperacaoConstante(no -> op, operando1 -> valor, operando2 -> valor);
+    long long resultado = calcularOperacaoConstante(no -> op, operando1 -> valor, operando2 -> valor);
+    if (resultado > INT_MAX || resultado < INT_MIN) {
+      reportarErro(no -> linha,
+        "Estouro de inteiro em expressao constante.",
+        "Use valores cujo resultado caiba em um 'int'.");
+      no -> tipo = TIPO_ERRO;
+      return;
+    }
     liberarAST(operando1);
     liberarAST(operando2);
     no -> filhos.clear();
     no -> kind = NODE_NUM;
-    no -> valor = resultado;
+    no -> valor = static_cast < int > (resultado);
     no -> eh_constante = true;
     no -> simplificado = true;
   }
 }
-int AnalisadorSemantico::calcularOperacaoConstante(int op, int valor1, int valor2) {
+long long AnalisadorSemantico::calcularOperacaoConstante(int op, long long valor1, long long valor2) {
   switch (op) {
   case SOMA:
     return valor1 + valor2;
@@ -483,6 +494,9 @@ int AnalisadorSemantico::calcularOperacaoConstante(int op, int valor1, int valor
   }
 }
 void AnalisadorSemantico::analisarVar(ASTNode * no) {
+  // o indice e analisado primeiro, mesmo que o vetor tenha erro
+  if (no -> eh_array) analisarNo(no -> filhos[0]);
+
   SimboloInfo * simbolo = tabelaDeSimbolos.buscarSimbolo(no -> nome);
   if (!simbolo) {
     reportarErro(no -> linha,
@@ -499,6 +513,10 @@ void AnalisadorSemantico::analisarVar(ASTNode * no) {
     return;
   }
   simbolo -> linhas_usos.push_back(no -> linha);
+  if (simbolo -> tipo == TIPO_ERRO) {
+    no -> tipo = TIPO_ERRO;
+    return;
+  }
   if (no -> eh_array) {
     if (simbolo -> categoria != CAT_ARRAY) {
       reportarErro(no -> linha,
@@ -508,8 +526,11 @@ void AnalisadorSemantico::analisarVar(ASTNode * no) {
       return;
     }
     ASTNode * indice = no -> filhos[0];
-    analisarNo(indice);
-    if (indice -> tipo != TIPO_ERRO && indice -> tipo != TIPO_INT) {
+    if (indice -> tipo == TIPO_ERRO) {
+      no -> tipo = TIPO_ERRO;
+      return;
+    }
+    if (indice -> tipo != TIPO_INT) {
       reportarErro(no -> linha,
         "Indice do vetor '" + no -> nome + "' deve ser do tipo 'int'.",
         "Use uma variavel ou expressao inteira dentro dos colchetes.");
@@ -530,6 +551,14 @@ void AnalisadorSemantico::analisarNum(ASTNode * no) {
   no -> eh_lvalue = false;
 }
 void AnalisadorSemantico::analisarCall(ASTNode * no) {
+  std::vector < ASTNode * > argumentos;
+  ASTNode * arg = (!no -> filhos.empty()) ? no -> filhos[0] : nullptr;
+  while (arg != nullptr) {
+    analisarNo(arg);
+    argumentos.push_back(arg);
+    arg = arg -> irmao;
+  }
+
   SimboloInfo * simbolo = tabelaDeSimbolos.buscarSimbolo(no -> nome);
   if (!simbolo) {
     reportarErro(no -> linha,
@@ -546,13 +575,6 @@ void AnalisadorSemantico::analisarCall(ASTNode * no) {
     return;
   }
   simbolo -> linhas_usos.push_back(no -> linha);
-  std::vector < ASTNode * > argumentos;
-  ASTNode * arg = (!no -> filhos.empty()) ? no -> filhos[0] : nullptr;
-  while (arg != nullptr) {
-    analisarNo(arg);
-    argumentos.push_back(arg);
-    arg = arg -> irmao;
-  }
   if (argumentos.size() != simbolo -> tipos_parametros.size()) {
     std::string assinatura = no -> nome + "(";
     for (size_t i = 0; i < simbolo -> tipos_parametros.size(); ++i) {
@@ -568,8 +590,9 @@ void AnalisadorSemantico::analisarCall(ASTNode * no) {
     no -> tipo = TIPO_ERRO;
     return;
   }
+  bool argumentosValidos = true;
   for (size_t i = 0; i < argumentos.size(); ++i) {
-    if (argumentos[i] -> tipo != TIPO_ERRO && argumentos[i] -> tipo != simbolo -> tipos_parametros[i]) {
+    if (simbolo -> tipos_parametros[i] != TIPO_ERRO && argumentos[i] -> tipo != TIPO_ERRO && argumentos[i] -> tipo != simbolo -> tipos_parametros[i]) {
       std::string sug = "Passe uma expressao do tipo '" + std::string(tipoDadoToString(simbolo -> tipos_parametros[i])) + "'.";
       if (simbolo -> tipos_parametros[i] == TIPO_INT && argumentos[i] -> tipo == TIPO_INT_ARRAY) {
         sug = "O parametro espera 'int', mas recebeu vetor 'int[]'. Indexe o vetor (ex: '" + argumentos[i] -> nome + "[0]').";
@@ -582,11 +605,10 @@ void AnalisadorSemantico::analisarCall(ASTNode * no) {
         std::string(tipoDadoToString(simbolo -> tipos_parametros[i])) + "', recebido '" +
         std::string(tipoDadoToString(argumentos[i] -> tipo)) + "').",
         sug);
-      no -> tipo = TIPO_ERRO;
-      return;
+      argumentosValidos = false;
     }
   }
-  no -> tipo = simbolo -> tipo;
+  no -> tipo = argumentosValidos ? simbolo -> tipo : TIPO_ERRO;
   no -> eh_constante = false;
   no -> eh_lvalue = false;
 }

@@ -49,6 +49,8 @@ struct ASTNode {
     bool eh_lvalue = false;     // Sintetizado: se pode ficar à esquerda de '='
     bool simplificado = false;  // Indica se sofreu Constant Folding (Slide 14)
 
+    int escopo = 0;             // Herdado: nivel do escopo ativo
+
     ASTNode(NodeKind k, int l) : kind(k), linha(l) {}
 };
 

@@ -1,6 +1,9 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <cstdlib>
+#include <cerrno>
+#include <climits>
 
 #include "../include/Token.h"
 #include "../include/scanner.h"
@@ -81,7 +84,17 @@ extern "C" int yylex(void) {
         if (tok.tipo == TOKEN_IDENTIFIER) {
             yylval.id_name = strdup(tok.lexema);
         } else if (tok.tipo == TOKEN_NUMBER) {
-            yylval.num_val = std::stoi(tok.lexema);
+            errno = 0;
+            const long long v = std::strtoll(tok.lexema, nullptr, 10);
+            if (errno == ERANGE || v > INT_MAX) {
+                ++erros_lexicos;
+                std::fprintf(stderr,
+                    "ERRO LEXICO (Linha %d, Coluna %d): numero '%s' nao cabe em um int\n",
+                    tok.linha, tok.coluna, tok.lexema);
+                yylval.num_val = 0;
+            } else {
+                yylval.num_val = static_cast<int>(v);
+            }
         }
 
         return paraYacc(tok.tipo);
