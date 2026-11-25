@@ -1,0 +1,21 @@
+int vet;
+
+int mdc(int u, int v) {
+    if (v == 0) return u;
+    else return mdc(v, u - u / v * v);
+}
+
+void main(void) {
+    int x;
+    int y;
+
+    x = 2 + 3 * 4;       /* Constant folding -> deve virar [Num] 14 (SIMPLIFICADO) */
+    y = input();
+    vet = mdc(x, y);
+
+    if (0) {             /* Deve emitir AVISO de codigo inalcancavel (dead code) */
+        output(0);
+    }
+
+    output(vet);
+}

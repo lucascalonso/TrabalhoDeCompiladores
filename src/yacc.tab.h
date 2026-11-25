@@ -44,6 +44,12 @@
 #if YYDEBUG
 extern int yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 1 "src/yacc.y"
+
+    #include "../include/AST.h"
+
+#line 53 "src/yacc.tab.h"
 
 /* Token kinds.  */
 #ifndef YYTOKENTYPE
@@ -88,7 +94,20 @@ extern int yydebug;
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef int YYSTYPE;
+union YYSTYPE
+{
+#line 39 "src/yacc.y"
+
+    int num_val;
+    char* id_name;
+    TipoDado tipo_val;
+    int op_val;
+    ASTNode* node;
+
+#line 108 "src/yacc.tab.h"
+
+};
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif

@@ -67,22 +67,38 @@
 
 
 /* First part of user prologue.  */
-#line 1 "src/yacc.y"
+#line 5 "src/yacc.y"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include "../include/AST.h"
 
-extern int yylex();
-
-/* Posicao do ultimo token valido, mantida pela ponte yylex (src/yylex_bridge.cpp) */
-extern int linha_do_erro;
-extern int coluna_do_erro;
+#ifdef __cplusplus
+extern "C" {
+#endif
+    int yylex(void);
+    extern int linha_do_erro;
+    extern int coluna_do_erro;
+#ifdef __cplusplus
+}
+#endif
 
 void yyerror(const char *s);
-
 int erros_sintaticos = 0;
+ASTNode* raiz_ast = nullptr;
 
-#line 86 "src/yacc.tab.c"
+static ASTNode* encadearIrmao(ASTNode* lista, ASTNode* novoNo) {
+    if (!lista) return novoNo;
+    ASTNode* aux = lista;
+    while (aux->irmao != nullptr) {
+        aux = aux->irmao;
+    }
+    aux->irmao = novoNo;
+    return lista;
+}
+
+#line 102 "src/yacc.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -560,15 +576,15 @@ static const yytype_int8 yytranslate[] =
 
 #if YYDEBUG
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_uint8 yyrline[] =
+static const yytype_int16 yyrline[] =
 {
-       0,    33,    33,    44,    46,    48,    52,    54,    59,    61,
-      66,    68,    73,    78,    80,    85,    87,    92,    94,    99,
-     104,   106,   111,   113,   114,   115,   120,   122,   124,   126,
-     128,   133,   135,   140,   142,   144,   148,   153,   155,   160,
-     162,   167,   169,   174,   176,   181,   182,   183,   184,   185,
-     186,   190,   192,   197,   198,   202,   204,   209,   210,   214,
-     216,   218,   220,   224,   228,   230,   234,   236
+       0,    67,    67,    75,    80,    85,    89,    94,   101,   111,
+     124,   129,   136,   149,   154,   161,   166,   173,   183,   195,
+     205,   210,   217,   222,   224,   226,   233,   234,   235,   236,
+     237,   240,   245,   252,   260,   269,   273,   282,   287,   295,
+     303,   309,   318,   329,   338,   344,   345,   346,   347,   348,
+     349,   351,   360,   366,   367,   369,   378,   384,   385,   387,
+     392,   397,   402,   410,   420,   425,   431,   436
 };
 #endif
 
@@ -1584,409 +1600,617 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* programa: declaracao_lista  */
-#line 34 "src/yacc.y"
-         { 
+#line 68 "src/yacc.y"
+         {
              printf("[Linha %d] Reducao: programa -> declaracao_lista\n", (yylsp[0]).first_line);
-             if (erros_sintaticos == 0)
-                 printf("\n>>> Analise sintatica concluida sem erros! <<<\n");
-             else
-                 printf("\n>>> Analise concluida com %d erros sintaticos! <<<\n", erros_sintaticos);
+             raiz_ast = (yyvsp[0].node);
+             (yyval.node) = (yyvsp[0].node);
          }
-#line 1596 "src/yacc.tab.c"
+#line 1610 "src/yacc.tab.c"
     break;
 
   case 3: /* declaracao_lista: declaracao_lista declaracao  */
-#line 45 "src/yacc.y"
-                   { printf("[Linha %d] Reducao: declaracao_lista -> declaracao_lista declaracao\n", (yylsp[0]).first_line); }
-#line 1602 "src/yacc.tab.c"
+#line 76 "src/yacc.y"
+                   {
+                       printf("[Linha %d] Reducao: declaracao_lista -> declaracao_lista declaracao\n", (yylsp[0]).first_line);
+                       (yyval.node) = encadearIrmao((yyvsp[-1].node), (yyvsp[0].node));
+                   }
+#line 1619 "src/yacc.tab.c"
     break;
 
   case 4: /* declaracao_lista: declaracao  */
-#line 47 "src/yacc.y"
-                   { printf("[Linha %d] Reducao: declaracao_lista -> declaracao\n", (yylsp[0]).first_line); }
-#line 1608 "src/yacc.tab.c"
+#line 81 "src/yacc.y"
+                   {
+                       printf("[Linha %d] Reducao: declaracao_lista -> declaracao\n", (yylsp[0]).first_line);
+                       (yyval.node) = (yyvsp[0].node);
+                   }
+#line 1628 "src/yacc.tab.c"
     break;
 
   case 5: /* declaracao_lista: declaracao_lista error  */
-#line 48 "src/yacc.y"
-                                          { yyclearin; yyerrok; }
-#line 1614 "src/yacc.tab.c"
+#line 86 "src/yacc.y"
+                   { yyclearin; yyerrok; (yyval.node) = (yyvsp[-1].node); }
+#line 1634 "src/yacc.tab.c"
     break;
 
   case 6: /* declaracao: var_declaracao  */
-#line 53 "src/yacc.y"
-             { printf("[Linha %d] Reducao: declaracao -> var_declaracao\n", (yylsp[0]).first_line); }
-#line 1620 "src/yacc.tab.c"
+#line 90 "src/yacc.y"
+             {
+                 printf("[Linha %d] Reducao: declaracao -> var_declaracao\n", (yylsp[0]).first_line);
+                 (yyval.node) = (yyvsp[0].node);
+             }
+#line 1643 "src/yacc.tab.c"
     break;
 
   case 7: /* declaracao: fun_declaracao  */
-#line 55 "src/yacc.y"
-             { printf("[Linha %d] Reducao: declaracao -> fun_declaracao\n", (yylsp[0]).first_line); }
-#line 1626 "src/yacc.tab.c"
+#line 95 "src/yacc.y"
+             {
+                 printf("[Linha %d] Reducao: declaracao -> fun_declaracao\n", (yylsp[0]).first_line);
+                 (yyval.node) = (yyvsp[0].node);
+             }
+#line 1652 "src/yacc.tab.c"
     break;
 
   case 8: /* var_declaracao: tipo_especificador ID SEMI  */
-#line 60 "src/yacc.y"
-                 { printf("[Linha %d] Reducao: var_declaracao -> tipo_especificador ID ;\n", (yylsp[-2]).first_line); }
-#line 1632 "src/yacc.tab.c"
+#line 102 "src/yacc.y"
+                 {
+                     printf("[Linha %d] Reducao: var_declaracao -> tipo_especificador ID ;\n", (yylsp[-2]).first_line);
+                     ASTNode* no = new ASTNode(NODE_VAR_DECL, (yylsp[-2]).first_line);
+                     no->tipo_decl = (yyvsp[-2].tipo_val);
+                     no->nome = (yyvsp[-1].id_name);
+                     no->eh_array = false;
+                     free((yyvsp[-1].id_name));
+                     (yyval.node) = no;
+                 }
+#line 1666 "src/yacc.tab.c"
     break;
 
   case 9: /* var_declaracao: tipo_especificador ID LBRACK NUM RBRACK SEMI  */
-#line 62 "src/yacc.y"
-                 { printf("[Linha %d] Reducao: var_declaracao -> tipo_especificador ID [ NUM ] ;\n", (yylsp[-5]).first_line); }
-#line 1638 "src/yacc.tab.c"
+#line 112 "src/yacc.y"
+                 {
+                     printf("[Linha %d] Reducao: var_declaracao -> tipo_especificador ID [ NUM ] ;\n", (yylsp[-5]).first_line);
+                     ASTNode* no = new ASTNode(NODE_VAR_DECL, (yylsp[-5]).first_line);
+                     no->tipo_decl = (yyvsp[-5].tipo_val);
+                     no->nome = (yyvsp[-4].id_name);
+                     no->eh_array = true;
+                     no->tamanho_array = (yyvsp[-2].num_val);
+                     free((yyvsp[-4].id_name));
+                     (yyval.node) = no;
+                 }
+#line 1681 "src/yacc.tab.c"
     break;
 
   case 10: /* tipo_especificador: INT  */
-#line 67 "src/yacc.y"
-                     { printf("[Linha %d] Reducao: tipo_especificador -> int\n", (yylsp[0]).first_line); }
-#line 1644 "src/yacc.tab.c"
+#line 125 "src/yacc.y"
+                     {
+                         printf("[Linha %d] Reducao: tipo_especificador -> int\n", (yylsp[0]).first_line);
+                         (yyval.tipo_val) = TIPO_INT;
+                     }
+#line 1690 "src/yacc.tab.c"
     break;
 
   case 11: /* tipo_especificador: VOID  */
-#line 69 "src/yacc.y"
-                     { printf("[Linha %d] Reducao: tipo_especificador -> void\n", (yylsp[0]).first_line); }
-#line 1650 "src/yacc.tab.c"
+#line 130 "src/yacc.y"
+                     {
+                         printf("[Linha %d] Reducao: tipo_especificador -> void\n", (yylsp[0]).first_line);
+                         (yyval.tipo_val) = TIPO_VOID;
+                     }
+#line 1699 "src/yacc.tab.c"
     break;
 
   case 12: /* fun_declaracao: tipo_especificador ID LPAREN params RPAREN composto_decl  */
-#line 74 "src/yacc.y"
-                 { printf("[Linha %d] Reducao: fun_declaracao -> tipo_especificador ID ( params ) composto_decl\n", (yylsp[-5]).first_line); }
-#line 1656 "src/yacc.tab.c"
+#line 137 "src/yacc.y"
+                 {
+                     printf("[Linha %d] Reducao: fun_declaracao -> tipo_especificador ID ( params ) composto_decl\n", (yylsp[-5]).first_line);
+                     ASTNode* no = new ASTNode(NODE_FUN_DECL, (yylsp[-5]).first_line);
+                     no->tipo_decl = (yyvsp[-5].tipo_val);
+                     no->nome = (yyvsp[-4].id_name);
+                     no->filhos.push_back((yyvsp[-2].node));
+                     no->filhos.push_back((yyvsp[0].node));
+                     free((yyvsp[-4].id_name));
+                     (yyval.node) = no;
+                 }
+#line 1714 "src/yacc.tab.c"
     break;
 
   case 13: /* params: param_lista  */
-#line 79 "src/yacc.y"
-         { printf("[Linha %d] Reducao: params -> param_lista\n", (yylsp[0]).first_line); }
-#line 1662 "src/yacc.tab.c"
+#line 150 "src/yacc.y"
+         {
+             printf("[Linha %d] Reducao: params -> param_lista\n", (yylsp[0]).first_line);
+             (yyval.node) = (yyvsp[0].node);
+         }
+#line 1723 "src/yacc.tab.c"
     break;
 
   case 14: /* params: VOID  */
-#line 81 "src/yacc.y"
-         { printf("[Linha %d] Reducao: params -> void\n", (yylsp[0]).first_line); }
-#line 1668 "src/yacc.tab.c"
+#line 155 "src/yacc.y"
+         {
+             printf("[Linha %d] Reducao: params -> void\n", (yylsp[0]).first_line);
+             (yyval.node) = nullptr;
+         }
+#line 1732 "src/yacc.tab.c"
     break;
 
   case 15: /* param_lista: param_lista COMMA param  */
-#line 86 "src/yacc.y"
-              { printf("[Linha %d] Reducao: param_lista -> param_lista , param\n", (yylsp[-2]).first_line); }
-#line 1674 "src/yacc.tab.c"
+#line 162 "src/yacc.y"
+              {
+                  printf("[Linha %d] Reducao: param_lista -> param_lista , param\n", (yylsp[-2]).first_line);
+                  (yyval.node) = encadearIrmao((yyvsp[-2].node), (yyvsp[0].node));
+              }
+#line 1741 "src/yacc.tab.c"
     break;
 
   case 16: /* param_lista: param  */
-#line 88 "src/yacc.y"
-              { printf("[Linha %d] Reducao: param_lista -> param\n", (yylsp[0]).first_line); }
-#line 1680 "src/yacc.tab.c"
+#line 167 "src/yacc.y"
+              {
+                  printf("[Linha %d] Reducao: param_lista -> param\n", (yylsp[0]).first_line);
+                  (yyval.node) = (yyvsp[0].node);
+              }
+#line 1750 "src/yacc.tab.c"
     break;
 
   case 17: /* param: tipo_especificador ID  */
-#line 93 "src/yacc.y"
-        { printf("[Linha %d] Reducao: param -> tipo_especificador ID\n", (yylsp[-1]).first_line); }
-#line 1686 "src/yacc.tab.c"
-    break;
-
-  case 18: /* param: tipo_especificador ID LBRACK RBRACK  */
-#line 95 "src/yacc.y"
-        { printf("[Linha %d] Reducao: param -> tipo_especificador ID [ ]\n", (yylsp[-3]).first_line); }
-#line 1692 "src/yacc.tab.c"
-    break;
-
-  case 19: /* composto_decl: LBRACE local_declaracoes statement_lista RBRACE  */
-#line 100 "src/yacc.y"
-                { printf("[Linha %d] Reducao: composto_decl -> { local_declaracoes statement_lista }\n", (yylsp[-3]).first_line); }
-#line 1698 "src/yacc.tab.c"
-    break;
-
-  case 20: /* local_declaracoes: local_declaracoes var_declaracao  */
-#line 105 "src/yacc.y"
-                    { printf("[Linha %d] Reducao: local_declaracoes -> local_declaracoes var_declaracao\n", (yylsp[0]).first_line); }
-#line 1704 "src/yacc.tab.c"
-    break;
-
-  case 21: /* local_declaracoes: %empty  */
-#line 107 "src/yacc.y"
-                    { printf("         Reducao: local_declaracoes -> vazio\n"); }
-#line 1710 "src/yacc.tab.c"
-    break;
-
-  case 22: /* statement_lista: statement_lista statement  */
-#line 112 "src/yacc.y"
-                  { printf("[Linha %d] Reducao: statement_lista -> statement_lista statement\n", (yylsp[0]).first_line); }
-#line 1716 "src/yacc.tab.c"
-    break;
-
-  case 23: /* statement_lista: statement_lista error SEMI  */
-#line 113 "src/yacc.y"
-                                             { yyclearin; yyerrok; }
-#line 1722 "src/yacc.tab.c"
-    break;
-
-  case 24: /* statement_lista: statement_lista error ID  */
-#line 114 "src/yacc.y"
-                                           { yyerrok; }
-#line 1728 "src/yacc.tab.c"
-    break;
-
-  case 25: /* statement_lista: %empty  */
-#line 116 "src/yacc.y"
-                  { printf("         Reducao: statement_lista -> vazio\n"); }
-#line 1734 "src/yacc.tab.c"
-    break;
-
-  case 26: /* statement: expressao_decl  */
-#line 121 "src/yacc.y"
-            { printf("[Linha %d] Reducao: statement -> expressao_decl\n", (yylsp[0]).first_line); }
-#line 1740 "src/yacc.tab.c"
-    break;
-
-  case 27: /* statement: composto_decl  */
-#line 123 "src/yacc.y"
-            { printf("[Linha %d] Reducao: statement -> composto_decl\n", (yylsp[0]).first_line); }
-#line 1746 "src/yacc.tab.c"
-    break;
-
-  case 28: /* statement: selecao_decl  */
-#line 125 "src/yacc.y"
-            { printf("[Linha %d] Reducao: statement -> selecao_decl\n", (yylsp[0]).first_line); }
-#line 1752 "src/yacc.tab.c"
-    break;
-
-  case 29: /* statement: iteracao_decl  */
-#line 127 "src/yacc.y"
-            { printf("[Linha %d] Reducao: statement -> iteracao_decl\n", (yylsp[0]).first_line); }
-#line 1758 "src/yacc.tab.c"
-    break;
-
-  case 30: /* statement: retorno_decl  */
-#line 129 "src/yacc.y"
-            { printf("[Linha %d] Reducao: statement -> retorno_decl\n", (yylsp[0]).first_line); }
+#line 174 "src/yacc.y"
+        {
+            printf("[Linha %d] Reducao: param -> tipo_especificador ID\n", (yylsp[-1]).first_line);
+            ASTNode* no = new ASTNode(NODE_PARAM, (yylsp[-1]).first_line);
+            no->tipo_decl = (yyvsp[-1].tipo_val);
+            no->nome = (yyvsp[0].id_name);
+            no->eh_array = false;
+            free((yyvsp[0].id_name));
+            (yyval.node) = no;
+        }
 #line 1764 "src/yacc.tab.c"
     break;
 
+  case 18: /* param: tipo_especificador ID LBRACK RBRACK  */
+#line 184 "src/yacc.y"
+        {
+            printf("[Linha %d] Reducao: param -> tipo_especificador ID [ ]\n", (yylsp[-3]).first_line);
+            ASTNode* no = new ASTNode(NODE_PARAM, (yylsp[-3]).first_line);
+            no->tipo_decl = (yyvsp[-3].tipo_val);
+            no->nome = (yyvsp[-2].id_name);
+            no->eh_array = true;
+            free((yyvsp[-2].id_name));
+            (yyval.node) = no;
+        }
+#line 1778 "src/yacc.tab.c"
+    break;
+
+  case 19: /* composto_decl: LBRACE local_declaracoes statement_lista RBRACE  */
+#line 196 "src/yacc.y"
+                {
+                    printf("[Linha %d] Reducao: composto_decl -> { local_declaracoes statement_lista }\n", (yylsp[-3]).first_line);
+                    ASTNode* no = new ASTNode(NODE_COMPOSTO, (yylsp[-3]).first_line);
+                    no->filhos.push_back((yyvsp[-2].node));
+                    no->filhos.push_back((yyvsp[-1].node));
+                    (yyval.node) = no;
+                }
+#line 1790 "src/yacc.tab.c"
+    break;
+
+  case 20: /* local_declaracoes: local_declaracoes var_declaracao  */
+#line 206 "src/yacc.y"
+                    {
+                        printf("[Linha %d] Reducao: local_declaracoes -> local_declaracoes var_declaracao\n", (yylsp[0]).first_line);
+                        (yyval.node) = encadearIrmao((yyvsp[-1].node), (yyvsp[0].node));
+                    }
+#line 1799 "src/yacc.tab.c"
+    break;
+
+  case 21: /* local_declaracoes: %empty  */
+#line 211 "src/yacc.y"
+                    {
+                        printf("         Reducao: local_declaracoes -> vazio\n");
+                        (yyval.node) = nullptr;
+                    }
+#line 1808 "src/yacc.tab.c"
+    break;
+
+  case 22: /* statement_lista: statement_lista statement  */
+#line 218 "src/yacc.y"
+                  {
+                      printf("[Linha %d] Reducao: statement_lista -> statement_lista statement\n", (yylsp[0]).first_line);
+                      (yyval.node) = encadearIrmao((yyvsp[-1].node), (yyvsp[0].node));
+                  }
+#line 1817 "src/yacc.tab.c"
+    break;
+
+  case 23: /* statement_lista: statement_lista error SEMI  */
+#line 223 "src/yacc.y"
+                  { yyclearin; yyerrok; (yyval.node) = (yyvsp[-2].node); }
+#line 1823 "src/yacc.tab.c"
+    break;
+
+  case 24: /* statement_lista: statement_lista error ID  */
+#line 225 "src/yacc.y"
+                  { free((yyvsp[0].id_name)); yyerrok; (yyval.node) = (yyvsp[-2].node); }
+#line 1829 "src/yacc.tab.c"
+    break;
+
+  case 25: /* statement_lista: %empty  */
+#line 227 "src/yacc.y"
+                  {
+                      printf("         Reducao: statement_lista -> vazio\n");
+                      (yyval.node) = nullptr;
+                  }
+#line 1838 "src/yacc.tab.c"
+    break;
+
+  case 26: /* statement: expressao_decl  */
+#line 233 "src/yacc.y"
+                           { printf("[Linha %d] Reducao: statement -> expressao_decl\n", (yylsp[0]).first_line); (yyval.node) = (yyvsp[0].node); }
+#line 1844 "src/yacc.tab.c"
+    break;
+
+  case 27: /* statement: composto_decl  */
+#line 234 "src/yacc.y"
+                           { printf("[Linha %d] Reducao: statement -> composto_decl\n", (yylsp[0]).first_line);  (yyval.node) = (yyvsp[0].node); }
+#line 1850 "src/yacc.tab.c"
+    break;
+
+  case 28: /* statement: selecao_decl  */
+#line 235 "src/yacc.y"
+                           { printf("[Linha %d] Reducao: statement -> selecao_decl\n", (yylsp[0]).first_line);   (yyval.node) = (yyvsp[0].node); }
+#line 1856 "src/yacc.tab.c"
+    break;
+
+  case 29: /* statement: iteracao_decl  */
+#line 236 "src/yacc.y"
+                           { printf("[Linha %d] Reducao: statement -> iteracao_decl\n", (yylsp[0]).first_line);  (yyval.node) = (yyvsp[0].node); }
+#line 1862 "src/yacc.tab.c"
+    break;
+
+  case 30: /* statement: retorno_decl  */
+#line 237 "src/yacc.y"
+                           { printf("[Linha %d] Reducao: statement -> retorno_decl\n", (yylsp[0]).first_line);   (yyval.node) = (yyvsp[0].node); }
+#line 1868 "src/yacc.tab.c"
+    break;
+
   case 31: /* expressao_decl: expressao SEMI  */
-#line 134 "src/yacc.y"
-                 { printf("[Linha %d] Reducao: expressao_decl -> expressao ;\n", (yylsp[-1]).first_line); }
-#line 1770 "src/yacc.tab.c"
+#line 241 "src/yacc.y"
+                 {
+                     printf("[Linha %d] Reducao: expressao_decl -> expressao ;\n", (yylsp[-1]).first_line);
+                     (yyval.node) = (yyvsp[-1].node);
+                 }
+#line 1877 "src/yacc.tab.c"
     break;
 
   case 32: /* expressao_decl: SEMI  */
-#line 136 "src/yacc.y"
-                 { printf("[Linha %d] Reducao: expressao_decl -> ;\n", (yylsp[0]).first_line); }
-#line 1776 "src/yacc.tab.c"
+#line 246 "src/yacc.y"
+                 {
+                     printf("[Linha %d] Reducao: expressao_decl -> ;\n", (yylsp[0]).first_line);
+                     (yyval.node) = nullptr;
+                 }
+#line 1886 "src/yacc.tab.c"
     break;
 
   case 33: /* selecao_decl: IF LPAREN expressao RPAREN statement  */
-#line 141 "src/yacc.y"
-               { printf("[Linha %d] Reducao: selecao_decl -> if ( expressao ) statement\n", (yylsp[-4]).first_line); }
-#line 1782 "src/yacc.tab.c"
+#line 253 "src/yacc.y"
+               {
+                   printf("[Linha %d] Reducao: selecao_decl -> if ( expressao ) statement\n", (yylsp[-4]).first_line);
+                   ASTNode* no = new ASTNode(NODE_IF, (yylsp[-4]).first_line);
+                   no->filhos.push_back((yyvsp[-2].node));
+                   no->filhos.push_back((yyvsp[0].node));
+                   (yyval.node) = no;
+               }
+#line 1898 "src/yacc.tab.c"
     break;
 
   case 34: /* selecao_decl: IF LPAREN expressao RPAREN statement ELSE statement  */
-#line 143 "src/yacc.y"
-               { printf("[Linha %d] Reducao: selecao_decl -> if ( expressao ) statement else statement\n", (yylsp[-6]).first_line); }
-#line 1788 "src/yacc.tab.c"
+#line 261 "src/yacc.y"
+               {
+                   printf("[Linha %d] Reducao: selecao_decl -> if ( expressao ) statement else statement\n", (yylsp[-6]).first_line);
+                   ASTNode* no = new ASTNode(NODE_IF, (yylsp[-6]).first_line);
+                   no->filhos.push_back((yyvsp[-4].node));
+                   no->filhos.push_back((yyvsp[-2].node));
+                   no->filhos.push_back((yyvsp[0].node));
+                   (yyval.node) = no;
+               }
+#line 1911 "src/yacc.tab.c"
     break;
 
   case 35: /* selecao_decl: IF error statement  */
-#line 144 "src/yacc.y"
-                                  { yyclearin; yyerrok; }
-#line 1794 "src/yacc.tab.c"
+#line 270 "src/yacc.y"
+               { yyclearin; yyerrok; (yyval.node) = (yyvsp[0].node); }
+#line 1917 "src/yacc.tab.c"
     break;
 
   case 36: /* iteracao_decl: WHILE LPAREN expressao RPAREN statement  */
-#line 149 "src/yacc.y"
-                { printf("[Linha %d] Reducao: iteracao_decl -> while ( expressao ) statement\n", (yylsp[-4]).first_line); }
-#line 1800 "src/yacc.tab.c"
+#line 274 "src/yacc.y"
+                {
+                    printf("[Linha %d] Reducao: iteracao_decl -> while ( expressao ) statement\n", (yylsp[-4]).first_line);
+                    ASTNode* no = new ASTNode(NODE_WHILE, (yylsp[-4]).first_line);
+                    no->filhos.push_back((yyvsp[-2].node));
+                    no->filhos.push_back((yyvsp[0].node));
+                    (yyval.node) = no;
+}
+#line 1929 "src/yacc.tab.c"
     break;
 
   case 37: /* retorno_decl: RETURN SEMI  */
-#line 154 "src/yacc.y"
-               { printf("[Linha %d] Reducao: retorno_decl -> return ;\n", (yylsp[-1]).first_line); }
-#line 1806 "src/yacc.tab.c"
-    break;
-
-  case 38: /* retorno_decl: RETURN expressao SEMI  */
-#line 156 "src/yacc.y"
-               { printf("[Linha %d] Reducao: retorno_decl -> return expressao ;\n", (yylsp[-2]).first_line); }
-#line 1812 "src/yacc.tab.c"
-    break;
-
-  case 39: /* expressao: var ASSIGN expressao  */
-#line 161 "src/yacc.y"
-            { printf("[Linha %d] Reducao: expressao -> var = expressao\n", (yylsp[-2]).first_line); }
-#line 1818 "src/yacc.tab.c"
-    break;
-
-  case 40: /* expressao: simples_expressao  */
-#line 163 "src/yacc.y"
-            { printf("[Linha %d] Reducao: expressao -> simples_expressao\n", (yylsp[0]).first_line); }
-#line 1824 "src/yacc.tab.c"
-    break;
-
-  case 41: /* var: ID  */
-#line 168 "src/yacc.y"
-      { printf("[Linha %d] Reducao: var -> ID\n", (yylsp[0]).first_line); }
-#line 1830 "src/yacc.tab.c"
-    break;
-
-  case 42: /* var: ID LBRACK expressao RBRACK  */
-#line 170 "src/yacc.y"
-      { printf("[Linha %d] Reducao: var -> ID [ expressao ]\n", (yylsp[-3]).first_line); }
-#line 1836 "src/yacc.tab.c"
-    break;
-
-  case 43: /* simples_expressao: soma_expressao relacional soma_expressao  */
-#line 175 "src/yacc.y"
-                    { printf("[Linha %d] Reducao: simples_expressao -> soma_expressao relacional soma_expressao\n", (yylsp[-2]).first_line); }
-#line 1842 "src/yacc.tab.c"
-    break;
-
-  case 44: /* simples_expressao: soma_expressao  */
-#line 177 "src/yacc.y"
-                    { printf("[Linha %d] Reducao: simples_expressao -> soma_expressao\n", (yylsp[0]).first_line); }
-#line 1848 "src/yacc.tab.c"
-    break;
-
-  case 45: /* relacional: LEQ  */
-#line 181 "src/yacc.y"
-                  { printf("[Linha %d] Reducao: relacional -> <=\n", (yylsp[0]).first_line); }
-#line 1854 "src/yacc.tab.c"
-    break;
-
-  case 46: /* relacional: LT  */
-#line 182 "src/yacc.y"
-                  { printf("[Linha %d] Reducao: relacional -> <\n", (yylsp[0]).first_line); }
-#line 1860 "src/yacc.tab.c"
-    break;
-
-  case 47: /* relacional: GT  */
-#line 183 "src/yacc.y"
-                  { printf("[Linha %d] Reducao: relacional -> >\n", (yylsp[0]).first_line); }
-#line 1866 "src/yacc.tab.c"
-    break;
-
-  case 48: /* relacional: GEQ  */
-#line 184 "src/yacc.y"
-                  { printf("[Linha %d] Reducao: relacional -> >=\n", (yylsp[0]).first_line); }
-#line 1872 "src/yacc.tab.c"
-    break;
-
-  case 49: /* relacional: EQ  */
-#line 185 "src/yacc.y"
-                  { printf("[Linha %d] Reducao: relacional -> ==\n", (yylsp[0]).first_line); }
-#line 1878 "src/yacc.tab.c"
-    break;
-
-  case 50: /* relacional: NEQ  */
-#line 186 "src/yacc.y"
-                  { printf("[Linha %d] Reducao: relacional -> !=\n", (yylsp[0]).first_line); }
-#line 1884 "src/yacc.tab.c"
-    break;
-
-  case 51: /* soma_expressao: soma_expressao soma termo  */
-#line 191 "src/yacc.y"
-                 { printf("[Linha %d] Reducao: soma_expressao -> soma_expressao soma termo\n", (yylsp[-2]).first_line); }
-#line 1890 "src/yacc.tab.c"
-    break;
-
-  case 52: /* soma_expressao: termo  */
-#line 193 "src/yacc.y"
-                 { printf("[Linha %d] Reducao: soma_expressao -> termo\n", (yylsp[0]).first_line); }
-#line 1896 "src/yacc.tab.c"
-    break;
-
-  case 53: /* soma: SOMA  */
-#line 197 "src/yacc.y"
-            { printf("[Linha %d] Reducao: soma -> +\n", (yylsp[0]).first_line); }
-#line 1902 "src/yacc.tab.c"
-    break;
-
-  case 54: /* soma: SUB  */
-#line 198 "src/yacc.y"
-            { printf("[Linha %d] Reducao: soma -> -\n", (yylsp[0]).first_line); }
-#line 1908 "src/yacc.tab.c"
-    break;
-
-  case 55: /* termo: termo mult fator  */
-#line 203 "src/yacc.y"
-        { printf("[Linha %d] Reducao: termo -> termo mult fator\n", (yylsp[-2]).first_line); }
-#line 1914 "src/yacc.tab.c"
-    break;
-
-  case 56: /* termo: fator  */
-#line 205 "src/yacc.y"
-        { printf("[Linha %d] Reducao: termo -> fator\n", (yylsp[0]).first_line); }
-#line 1920 "src/yacc.tab.c"
-    break;
-
-  case 57: /* mult: MULT  */
-#line 209 "src/yacc.y"
-            { printf("[Linha %d] Reducao: mult -> *\n", (yylsp[0]).first_line); }
-#line 1926 "src/yacc.tab.c"
-    break;
-
-  case 58: /* mult: DIV  */
-#line 210 "src/yacc.y"
-            { printf("[Linha %d] Reducao: mult -> /\n", (yylsp[0]).first_line); }
-#line 1932 "src/yacc.tab.c"
-    break;
-
-  case 59: /* fator: LPAREN expressao RPAREN  */
-#line 215 "src/yacc.y"
-        { printf("[Linha %d] Reducao: fator -> ( expressao )\n", (yylsp[-2]).first_line); }
+#line 283 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: retorno_decl -> return ;\n", (yylsp[-1]).first_line);
+(yyval.node) = new ASTNode(NODE_RETURN, (yylsp[-1]).first_line);
+}
 #line 1938 "src/yacc.tab.c"
     break;
 
+  case 38: /* retorno_decl: RETURN expressao SEMI  */
+#line 288 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: retorno_decl -> return expressao ;\n", (yylsp[-2]).first_line);
+ASTNode* no = new ASTNode(NODE_RETURN, (yylsp[-2]).first_line);
+no->filhos.push_back((yyvsp[-1].node));
+(yyval.node) = no;
+}
+#line 1949 "src/yacc.tab.c"
+    break;
+
+  case 39: /* expressao: var ASSIGN expressao  */
+#line 296 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: expressao -> var = expressao\n", (yylsp[-2]).first_line);
+ASTNode* no = new ASTNode(NODE_ASSIGN, (yylsp[-2]).first_line);
+no->filhos.push_back((yyvsp[-2].node));
+no->filhos.push_back((yyvsp[0].node));
+(yyval.node) = no;
+}
+#line 1961 "src/yacc.tab.c"
+    break;
+
+  case 40: /* expressao: simples_expressao  */
+#line 304 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: expressao -> simples_expressao\n", (yylsp[0]).first_line);
+(yyval.node) = (yyvsp[0].node);
+}
+#line 1970 "src/yacc.tab.c"
+    break;
+
+  case 41: /* var: ID  */
+#line 310 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: var -> ID\n", (yylsp[0]).first_line);
+ASTNode* no = new ASTNode(NODE_VAR, (yylsp[0]).first_line);
+no->nome = (yyvsp[0].id_name);
+no->eh_array = false;
+free((yyvsp[0].id_name));
+(yyval.node) = no;
+}
+#line 1983 "src/yacc.tab.c"
+    break;
+
+  case 42: /* var: ID LBRACK expressao RBRACK  */
+#line 319 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: var -> ID [ expressao ]\n", (yylsp[-3]).first_line);
+ASTNode* no = new ASTNode(NODE_VAR, (yylsp[-3]).first_line);
+no->nome = (yyvsp[-3].id_name);
+no->eh_array = true;
+no->filhos.push_back((yyvsp[-1].node));
+free((yyvsp[-3].id_name));
+(yyval.node) = no;
+}
+#line 1997 "src/yacc.tab.c"
+    break;
+
+  case 43: /* simples_expressao: soma_expressao relacional soma_expressao  */
+#line 330 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: simples_expressao -> soma_expressao relacional soma_expressao\n", (yylsp[-2]).first_line);
+ASTNode* no = new ASTNode(NODE_OP, (yylsp[-2]).first_line);
+no->op = (yyvsp[-1].op_val);
+no->filhos.push_back((yyvsp[-2].node));
+no->filhos.push_back((yyvsp[0].node));
+(yyval.node) = no;
+}
+#line 2010 "src/yacc.tab.c"
+    break;
+
+  case 44: /* simples_expressao: soma_expressao  */
+#line 339 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: simples_expressao -> soma_expressao\n", (yylsp[0]).first_line);
+(yyval.node) = (yyvsp[0].node);
+}
+#line 2019 "src/yacc.tab.c"
+    break;
+
+  case 45: /* relacional: LEQ  */
+#line 344 "src/yacc.y"
+                 { printf("[Linha %d] Reducao: relacional -> <=\n", (yylsp[0]).first_line); (yyval.op_val) = LEQ; }
+#line 2025 "src/yacc.tab.c"
+    break;
+
+  case 46: /* relacional: LT  */
+#line 345 "src/yacc.y"
+      { printf("[Linha %d] Reducao: relacional -> <\n", (yylsp[0]).first_line);  (yyval.op_val) = LT; }
+#line 2031 "src/yacc.tab.c"
+    break;
+
+  case 47: /* relacional: GT  */
+#line 346 "src/yacc.y"
+      { printf("[Linha %d] Reducao: relacional -> >\n", (yylsp[0]).first_line);  (yyval.op_val) = GT; }
+#line 2037 "src/yacc.tab.c"
+    break;
+
+  case 48: /* relacional: GEQ  */
+#line 347 "src/yacc.y"
+      { printf("[Linha %d] Reducao: relacional -> >=\n", (yylsp[0]).first_line); (yyval.op_val) = GEQ; }
+#line 2043 "src/yacc.tab.c"
+    break;
+
+  case 49: /* relacional: EQ  */
+#line 348 "src/yacc.y"
+      { printf("[Linha %d] Reducao: relacional -> ==\n", (yylsp[0]).first_line); (yyval.op_val) = EQ; }
+#line 2049 "src/yacc.tab.c"
+    break;
+
+  case 50: /* relacional: NEQ  */
+#line 349 "src/yacc.y"
+      { printf("[Linha %d] Reducao: relacional -> !=\n", (yylsp[0]).first_line); (yyval.op_val) = NEQ; }
+#line 2055 "src/yacc.tab.c"
+    break;
+
+  case 51: /* soma_expressao: soma_expressao soma termo  */
+#line 352 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: soma_expressao -> soma_expressao soma termo\n", (yylsp[-2]).first_line);
+ASTNode* no = new ASTNode(NODE_OP, (yylsp[-2]).first_line);
+no->op = (yyvsp[-1].op_val);
+no->filhos.push_back((yyvsp[-2].node));
+no->filhos.push_back((yyvsp[0].node));
+(yyval.node) = no;
+}
+#line 2068 "src/yacc.tab.c"
+    break;
+
+  case 52: /* soma_expressao: termo  */
+#line 361 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: soma_expressao -> termo\n", (yylsp[0]).first_line);
+(yyval.node) = (yyvsp[0].node);
+}
+#line 2077 "src/yacc.tab.c"
+    break;
+
+  case 53: /* soma: SOMA  */
+#line 366 "src/yacc.y"
+            { printf("[Linha %d] Reducao: soma -> +\n", (yylsp[0]).first_line); (yyval.op_val) = SOMA; }
+#line 2083 "src/yacc.tab.c"
+    break;
+
+  case 54: /* soma: SUB  */
+#line 367 "src/yacc.y"
+       { printf("[Linha %d] Reducao: soma -> -\n", (yylsp[0]).first_line); (yyval.op_val) = SUB; }
+#line 2089 "src/yacc.tab.c"
+    break;
+
+  case 55: /* termo: termo mult fator  */
+#line 370 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: termo -> termo mult fator\n", (yylsp[-2]).first_line);
+ASTNode* no = new ASTNode(NODE_OP, (yylsp[-2]).first_line);
+no->op = (yyvsp[-1].op_val);
+no->filhos.push_back((yyvsp[-2].node));
+no->filhos.push_back((yyvsp[0].node));
+(yyval.node) = no;
+}
+#line 2102 "src/yacc.tab.c"
+    break;
+
+  case 56: /* termo: fator  */
+#line 379 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: termo -> fator\n", (yylsp[0]).first_line);
+(yyval.node) = (yyvsp[0].node);
+}
+#line 2111 "src/yacc.tab.c"
+    break;
+
+  case 57: /* mult: MULT  */
+#line 384 "src/yacc.y"
+            { printf("[Linha %d] Reducao: mult -> *\n", (yylsp[0]).first_line); (yyval.op_val) = MULT; }
+#line 2117 "src/yacc.tab.c"
+    break;
+
+  case 58: /* mult: DIV  */
+#line 385 "src/yacc.y"
+       { printf("[Linha %d] Reducao: mult -> /\n", (yylsp[0]).first_line); (yyval.op_val) = DIV; }
+#line 2123 "src/yacc.tab.c"
+    break;
+
+  case 59: /* fator: LPAREN expressao RPAREN  */
+#line 388 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: fator -> ( expressao )\n", (yylsp[-2]).first_line);
+(yyval.node) = (yyvsp[-1].node);
+}
+#line 2132 "src/yacc.tab.c"
+    break;
+
   case 60: /* fator: var  */
-#line 217 "src/yacc.y"
-        { printf("[Linha %d] Reducao: fator -> var\n", (yylsp[0]).first_line); }
-#line 1944 "src/yacc.tab.c"
+#line 393 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: fator -> var\n", (yylsp[0]).first_line);
+(yyval.node) = (yyvsp[0].node);
+}
+#line 2141 "src/yacc.tab.c"
     break;
 
   case 61: /* fator: ativacao  */
-#line 219 "src/yacc.y"
-        { printf("[Linha %d] Reducao: fator -> ativacao\n", (yylsp[0]).first_line); }
-#line 1950 "src/yacc.tab.c"
+#line 398 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: fator -> ativacao\n", (yylsp[0]).first_line);
+(yyval.node) = (yyvsp[0].node);
+}
+#line 2150 "src/yacc.tab.c"
     break;
 
   case 62: /* fator: NUM  */
-#line 221 "src/yacc.y"
-{ printf("[Linha %d] Reducao: fator -> NUM\n", (yylsp[0]).first_line); }
-#line 1956 "src/yacc.tab.c"
+#line 403 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: fator -> NUM\n", (yylsp[0]).first_line);
+ASTNode* no = new ASTNode(NODE_NUM, (yylsp[0]).first_line);
+no->valor = (yyvsp[0].num_val);
+(yyval.node) = no;
+}
+#line 2161 "src/yacc.tab.c"
     break;
 
   case 63: /* ativacao: ID LPAREN args RPAREN  */
-#line 225 "src/yacc.y"
-{ printf("[Linha %d] Reducao: ativacao -> ID ( args )\n", (yylsp[-3]).first_line); }
-#line 1962 "src/yacc.tab.c"
+#line 411 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: ativacao -> ID ( args )\n", (yylsp[-3]).first_line);
+ASTNode* no = new ASTNode(NODE_CALL, (yylsp[-3]).first_line);
+no->nome = (yyvsp[-3].id_name);
+no->filhos.push_back((yyvsp[-1].node));
+free((yyvsp[-3].id_name));
+(yyval.node) = no;
+}
+#line 2174 "src/yacc.tab.c"
     break;
 
   case 64: /* args: arg_lista  */
-#line 229 "src/yacc.y"
-{ printf("[Linha %d] Reducao: args -> arg_lista\n", (yylsp[0]).first_line); }
-#line 1968 "src/yacc.tab.c"
+#line 421 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: args -> arg_lista\n", (yylsp[0]).first_line);
+(yyval.node) = (yyvsp[0].node);
+}
+#line 2183 "src/yacc.tab.c"
     break;
 
   case 65: /* args: %empty  */
-#line 231 "src/yacc.y"
-{ printf("         Reducao: args -> vazio\n"); }
-#line 1974 "src/yacc.tab.c"
+#line 426 "src/yacc.y"
+{
+printf("         Reducao: args -> vazio\n");
+(yyval.node) = nullptr;
+}
+#line 2192 "src/yacc.tab.c"
     break;
 
   case 66: /* arg_lista: arg_lista COMMA expressao  */
-#line 235 "src/yacc.y"
-{ printf("[Linha %d] Reducao: arg_lista -> arg_lista , expressao\n", (yylsp[-2]).first_line); }
-#line 1980 "src/yacc.tab.c"
+#line 432 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: arg_lista -> arg_lista , expressao\n", (yylsp[-2]).first_line);
+(yyval.node) = encadearIrmao((yyvsp[-2].node), (yyvsp[0].node));
+}
+#line 2201 "src/yacc.tab.c"
     break;
 
   case 67: /* arg_lista: expressao  */
-#line 237 "src/yacc.y"
-{ printf("[Linha %d] Reducao: arg_lista -> expressao\n", (yylsp[0]).first_line); }
-#line 1986 "src/yacc.tab.c"
+#line 437 "src/yacc.y"
+{
+printf("[Linha %d] Reducao: arg_lista -> expressao\n", (yylsp[0]).first_line);
+(yyval.node) = (yyvsp[0].node);
+}
+#line 2210 "src/yacc.tab.c"
     break;
 
 
-#line 1990 "src/yacc.tab.c"
+#line 2214 "src/yacc.tab.c"
 
       default: break;
     }
@@ -2215,7 +2439,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 239 "src/yacc.y"
+#line 442 "src/yacc.y"
 
 void yyerror(const char *s) {
 erros_sintaticos++;

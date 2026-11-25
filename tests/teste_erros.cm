@@ -1,0 +1,19 @@
+void varVoid;
+int vetorInvalido[0];
+
+int soma(int a, int b) {
+    return;
+}
+
+void testaErros(void) {
+    int x;
+    int x;
+    int v[5];
+
+    z = 10;
+    v = 5;
+    x = 10 / (5 - 5);
+    x = soma(1);
+    x = soma(v, 2);
+    return 1;
+}

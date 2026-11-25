@@ -1,18 +1,13 @@
-// Ponte entre o scanner em C++ (tabela de transição) e o parser gerado pelo Bison.
-// O Bison chama yylex(); aqui ela pede o próximo token ao Scanner, ignora
-// comentários, reporta erros léxicos e converte TipoDeToken -> token do Yacc.
-
 #include <cstdio>
+#include <cstring>
 #include <string>
 
 #include "../include/Token.h"
 #include "../include/scanner.h"
+#include "../include/AST.h"
+#include "yacc.tab.h"
 
 extern "C" {
-#include "yacc.tab.h"   // gerado por: bison -d -o yacc.tab.c yacc.y
-
-// Histórico duplo: yyerror() reporta a posição do token ANTERIOR ao que
-// causou o erro (mesma lógica do REGISTRAR_TOKEN_VALIDO do antigo lexer.l).
 int linha_do_erro = 1;
 int coluna_do_erro = 1;
 int erros_lexicos = 0;
@@ -54,7 +49,6 @@ static int paraYacc(TipoDeToken t) {
     }
 }
 
-
 extern "C" int yylex(void) {
     Scanner &scanner = Scanner::getInstance();
 
@@ -62,12 +56,12 @@ extern "C" int yylex(void) {
         Token tok = scanner.nextToken();
 
         if (tok.tipo == TOKEN_EOF)
-            return 0;                       // YYEOF
+            return 0;
 
         if (tok.tipo == TOKEN_COMMENT)
-            continue;                       // comentários não vão para o parser
+            continue;
 
-        if (tok.tipo == TOKEN_ERROR) {      // erro léxico: reporta e segue
+        if (tok.tipo == TOKEN_ERROR) {
             ++erros_lexicos;
             std::fprintf(stderr,
                 "ERRO LEXICO (Linha %d, Coluna %d): lexema invalido '%s'\n",
@@ -83,6 +77,12 @@ extern "C" int yylex(void) {
         coluna_do_erro = ultima_coluna_token_valido;
         ultima_linha_token_valido  = tok.linha;
         ultima_coluna_token_valido = tok.coluna;
+
+        if (tok.tipo == TOKEN_IDENTIFIER) {
+            yylval.id_name = strdup(tok.lexema);
+        } else if (tok.tipo == TOKEN_NUMBER) {
+            yylval.num_val = std::stoi(tok.lexema);
+        }
 
         return paraYacc(tok.tipo);
     }
