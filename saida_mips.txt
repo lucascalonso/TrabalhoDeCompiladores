@@ -1,0 +1,332 @@
+# Codigo MIPS gerado pelo compilador C-
+.data
+    _newline: .asciiz "\n"
+    .align 2
+    globalArr: .space 20
+
+.text
+.globl main
+    j main
+
+# Funcao: ordenar
+ordenar:
+    subu $sp, $sp, 8
+    sw $fp, 4($sp)
+    sw $ra, 0($sp)
+    move $fp, $sp
+    subu $sp, $sp, 12
+    li $t0, 0
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    addiu $t2, $fp, -4
+    lw $t0, 0($sp)
+    addu $sp, $sp, 4
+    sw $t0, 0($t2)
+L_while_0:
+    addiu $t2, $fp, -4
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    addiu $t2, $fp, 12
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    li $t0, 1
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    sub $t0, $t1, $t0
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    slt $t0, $t1, $t0
+    beq $t0, $zero, L_endwhile_1
+    li $t0, 0
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    addiu $t2, $fp, -8
+    lw $t0, 0($sp)
+    addu $sp, $sp, 4
+    sw $t0, 0($t2)
+L_while_2:
+    addiu $t2, $fp, -8
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    addiu $t2, $fp, 12
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    addiu $t2, $fp, -4
+    lw $t0, 0($t2)
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    sub $t0, $t1, $t0
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    li $t0, 1
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    sub $t0, $t1, $t0
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    slt $t0, $t1, $t0
+    beq $t0, $zero, L_endwhile_3
+    lw $t2, 8($fp)
+    subu $sp, $sp, 4
+    sw $t2, 0($sp)
+    addiu $t2, $fp, -8
+    lw $t0, 0($t2)
+    lw $t2, 0($sp)
+    addu $sp, $sp, 4
+    sll $t0, $t0, 2
+    addu $t2, $t2, $t0
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    lw $t2, 8($fp)
+    subu $sp, $sp, 4
+    sw $t2, 0($sp)
+    addiu $t2, $fp, -8
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    li $t0, 1
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    add $t0, $t1, $t0
+    lw $t2, 0($sp)
+    addu $sp, $sp, 4
+    sll $t0, $t0, 2
+    addu $t2, $t2, $t0
+    lw $t0, 0($t2)
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    sgt $t0, $t1, $t0
+    beq $t0, $zero, L_endif_5
+    lw $t2, 8($fp)
+    subu $sp, $sp, 4
+    sw $t2, 0($sp)
+    addiu $t2, $fp, -8
+    lw $t0, 0($t2)
+    lw $t2, 0($sp)
+    addu $sp, $sp, 4
+    sll $t0, $t0, 2
+    addu $t2, $t2, $t0
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    addiu $t2, $fp, -12
+    lw $t0, 0($sp)
+    addu $sp, $sp, 4
+    sw $t0, 0($t2)
+    lw $t2, 8($fp)
+    subu $sp, $sp, 4
+    sw $t2, 0($sp)
+    addiu $t2, $fp, -8
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    li $t0, 1
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    add $t0, $t1, $t0
+    lw $t2, 0($sp)
+    addu $sp, $sp, 4
+    sll $t0, $t0, 2
+    addu $t2, $t2, $t0
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    lw $t2, 8($fp)
+    subu $sp, $sp, 4
+    sw $t2, 0($sp)
+    addiu $t2, $fp, -8
+    lw $t0, 0($t2)
+    lw $t2, 0($sp)
+    addu $sp, $sp, 4
+    sll $t0, $t0, 2
+    addu $t2, $t2, $t0
+    lw $t0, 0($sp)
+    addu $sp, $sp, 4
+    sw $t0, 0($t2)
+    addiu $t2, $fp, -12
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    lw $t2, 8($fp)
+    subu $sp, $sp, 4
+    sw $t2, 0($sp)
+    addiu $t2, $fp, -8
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    li $t0, 1
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    add $t0, $t1, $t0
+    lw $t2, 0($sp)
+    addu $sp, $sp, 4
+    sll $t0, $t0, 2
+    addu $t2, $t2, $t0
+    lw $t0, 0($sp)
+    addu $sp, $sp, 4
+    sw $t0, 0($t2)
+L_endif_5:
+    addiu $t2, $fp, -8
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    li $t0, 1
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    add $t0, $t1, $t0
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    addiu $t2, $fp, -8
+    lw $t0, 0($sp)
+    addu $sp, $sp, 4
+    sw $t0, 0($t2)
+    j L_while_2
+L_endwhile_3:
+    addiu $t2, $fp, -4
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    li $t0, 1
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    add $t0, $t1, $t0
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    addiu $t2, $fp, -4
+    lw $t0, 0($sp)
+    addu $sp, $sp, 4
+    sw $t0, 0($t2)
+    j L_while_0
+L_endwhile_1:
+ordenar_fim:
+    move $sp, $fp
+    lw $ra, 0($sp)
+    lw $fp, 4($sp)
+    addu $sp, $sp, 8
+    jr $ra
+
+# Funcao: main
+main:
+    subu $sp, $sp, 8
+    sw $fp, 4($sp)
+    sw $ra, 0($sp)
+    move $fp, $sp
+    subu $sp, $sp, 4
+    li $t0, 0
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    addiu $t2, $fp, -4
+    lw $t0, 0($sp)
+    addu $sp, $sp, 4
+    sw $t0, 0($t2)
+L_while_6:
+    addiu $t2, $fp, -4
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    li $t0, 5
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    slt $t0, $t1, $t0
+    beq $t0, $zero, L_endwhile_7
+    li $v0, 5
+    syscall
+    move $t0, $v0
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    la $t2, globalArr
+    subu $sp, $sp, 4
+    sw $t2, 0($sp)
+    addiu $t2, $fp, -4
+    lw $t0, 0($t2)
+    lw $t2, 0($sp)
+    addu $sp, $sp, 4
+    sll $t0, $t0, 2
+    addu $t2, $t2, $t0
+    lw $t0, 0($sp)
+    addu $sp, $sp, 4
+    sw $t0, 0($t2)
+    addiu $t2, $fp, -4
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    li $t0, 1
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    add $t0, $t1, $t0
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    addiu $t2, $fp, -4
+    lw $t0, 0($sp)
+    addu $sp, $sp, 4
+    sw $t0, 0($t2)
+    j L_while_6
+L_endwhile_7:
+    li $t0, 5
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    la $t2, globalArr
+    move $t0, $t2
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    jal ordenar
+    addu $sp, $sp, 8
+    move $t0, $v0
+    li $t0, 0
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    addiu $t2, $fp, -4
+    lw $t0, 0($sp)
+    addu $sp, $sp, 4
+    sw $t0, 0($t2)
+L_while_8:
+    addiu $t2, $fp, -4
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    li $t0, 5
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    slt $t0, $t1, $t0
+    beq $t0, $zero, L_endwhile_9
+    la $t2, globalArr
+    subu $sp, $sp, 4
+    sw $t2, 0($sp)
+    addiu $t2, $fp, -4
+    lw $t0, 0($t2)
+    lw $t2, 0($sp)
+    addu $sp, $sp, 4
+    sll $t0, $t0, 2
+    addu $t2, $t2, $t0
+    lw $t0, 0($t2)
+    move $a0, $t0
+    li $v0, 1
+    syscall
+    la $a0, _newline
+    li $v0, 4
+    syscall
+    addiu $t2, $fp, -4
+    lw $t0, 0($t2)
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    li $t0, 1
+    lw $t1, 0($sp)
+    addu $sp, $sp, 4
+    add $t0, $t1, $t0
+    subu $sp, $sp, 4
+    sw $t0, 0($sp)
+    addiu $t2, $fp, -4
+    lw $t0, 0($sp)
+    addu $sp, $sp, 4
+    sw $t0, 0($t2)
+    j L_while_8
+L_endwhile_9:
+main_fim:
+    li $v0, 10
+    syscall
+

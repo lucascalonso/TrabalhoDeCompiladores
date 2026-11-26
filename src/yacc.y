@@ -441,7 +441,8 @@ $$ = $1;
 ;
 %%
 void yyerror(const char *s) {
-erros_sintaticos++;
-fprintf(stderr, "Erro Sintatico na linha %d (coluna %d): %s\n",
-linha_do_erro, coluna_do_erro, s);
+    erros_sintaticos++;
+    fprintf(stderr, "Erro Sintatico (linha %d, coluna %d): %s\n",
+            linha_do_erro, coluna_do_erro, s);
+    fprintf(stderr, "  -> Sugestao: Verifique ponto e virgula ';', parenteses, chaves ou estrutura do comando proximo a este ponto.\n");
 }

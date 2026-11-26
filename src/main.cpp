@@ -6,6 +6,7 @@
 #include "../include/scanner.h"
 #include "../include/AST.h"
 #include "../include/AnalisadorSemantico.h"
+#include "../include/GeradorMIPS.h"
 
 extern "C" {
     extern int erros_lexicos;
@@ -100,6 +101,20 @@ int main(int argc, char *argv[]) {
     }
 
     std::cout << "\n>>> Analise semantica concluida sem erros! <<<" << std::endl;
+
+    // ==========================================
+    // FASE 4: GERACAO DE CODIGO MIPS
+    // ==========================================
+    std::cout << "\n==========================================" << std::endl;
+    std::cout << "         4. GERACAO DE CODIGO MIPS        " << std::endl;
+    std::cout << "==========================================" << std::endl;
+
+    GeradorMIPS gerador;
+    const std::string arquivoMips = "saida_mips.txt";
+    if (gerador.gerar(raiz_ast, arquivoMips)) {
+        std::cout << ">>> Codigo MIPS gerado com sucesso em: " << arquivoMips << " <<<" << std::endl;
+    }
+
     liberarAST(raiz_ast);
     return 0;
 }

@@ -1,0 +1,40 @@
+/* Programa completo em C-: le 5 numeros, ordena com Bubble Sort e imprime */
+int globalArr[5];
+
+void ordenar(int a[], int n) {
+    int i;
+    int j;
+    int temp;
+
+    i = 0;
+    while (i < n - 1) {
+        j = 0;
+        while (j < n - i - 1) {
+            if (a[j] > a[j + 1]) {
+                temp = a[j];
+                a[j] = a[j + 1];
+                a[j + 1] = temp;
+            }
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+}
+
+void main(void) {
+    int k;
+
+    k = 0;
+    while (k < 5) {
+        globalArr[k] = input();
+        k = k + 1;
+    }
+
+    ordenar(globalArr, 5);
+
+    k = 0;
+    while (k < 5) {
+        output(globalArr[k]);
+        k = k + 1;
+    }
+}
