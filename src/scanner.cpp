@@ -160,6 +160,18 @@ Token Scanner::nextToken() {
     }
 
     /*
+     * Comentário sem fechamento: o arquivo acabou dentro do comentário.
+     * Sem este teste, o scanner recuaria até a "/" (estado final) e
+     * leria o texto do comentário como código.
+     */
+    if (eof() && isCommentState(estado)) {
+        Token token = makeError("/*");
+        token.linha = static_cast<int>(startLine);
+        token.coluna = startColumn;
+        return token;
+    }
+
+    /*
      * Não houve nenhum estado final.
      *
      * Exemplo: "!" sozinho. A matriz leva q0 -> q_!, mas q_! não é

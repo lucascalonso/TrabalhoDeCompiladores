@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <cstring>
+#include <cstdio>
 
 #include "../include/Token.h"
 #include "../include/scanner.h"
@@ -30,6 +31,12 @@ int main(int argc, char *argv[]) {
     if (!scanner.loadFile(filename)) {
         std::cerr << "Erro ao abrir o arquivo: " << filename << std::endl;
         return 1;
+    }
+
+    const std::string arquivoMips = "saida_mips.txt";
+    // Apaga a saida de uma compilacao anterior para nao ser executada por engano
+    if (!somenteTokens) {
+        std::remove(arquivoMips.c_str());
     }
 
     // ==========================================
@@ -70,7 +77,8 @@ int main(int argc, char *argv[]) {
     if (r == 0 && erros_sintaticos == 0 && erros_lexicos == 0) {
         std::cout << ">>> Analise sintatica concluida sem erros! <<<" << std::endl;
     } else {
-        std::cout << ">>> Analise sintatica concluida com " << erros_sintaticos << " erro(s) sintatico(s)! <<<" << std::endl;
+        std::cout << ">>> Analise concluida com " << erros_lexicos << " erro(s) lexico(s) e "
+                  << erros_sintaticos << " erro(s) sintatico(s)! <<<" << std::endl;
         liberarAST(raiz_ast);
         return 1;
     }
@@ -110,10 +118,11 @@ int main(int argc, char *argv[]) {
     std::cout << "==========================================" << std::endl;
 
     GeradorMIPS gerador;
-    const std::string arquivoMips = "saida_mips.txt";
-    if (gerador.gerar(raiz_ast, arquivoMips)) {
-        std::cout << ">>> Codigo MIPS gerado com sucesso em: " << arquivoMips << " <<<" << std::endl;
+    if (!gerador.gerar(raiz_ast, arquivoMips)) {
+        liberarAST(raiz_ast);
+        return 1;
     }
+    std::cout << ">>> Codigo MIPS gerado com sucesso em: " << arquivoMips << " <<<" << std::endl;
 
     liberarAST(raiz_ast);
     return 0;

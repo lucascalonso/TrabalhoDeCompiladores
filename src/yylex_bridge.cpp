@@ -66,9 +66,15 @@ extern "C" int yylex(void) {
 
         if (tok.tipo == TOKEN_ERROR) {
             ++erros_lexicos;
-            std::fprintf(stderr,
-                "ERRO LEXICO (Linha %d, Coluna %d): lexema invalido '%s'\n",
-                tok.linha, tok.coluna, tok.lexema);
+            if (std::strcmp(tok.lexema, "/*") == 0) {
+                std::fprintf(stderr,
+                    "ERRO LEXICO (Linha %d, Coluna %d): comentario nao fechado\n",
+                    tok.linha, tok.coluna);
+            } else {
+                std::fprintf(stderr,
+                    "ERRO LEXICO (Linha %d, Coluna %d): lexema invalido '%s'\n",
+                    tok.linha, tok.coluna, tok.lexema);
+            }
             continue;
         }
 

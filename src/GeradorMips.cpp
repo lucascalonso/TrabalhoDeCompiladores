@@ -60,17 +60,34 @@ bool GeradorMIPS::gerar(ASTNode * raiz,
 
   out << "\n.text\n";
   out << ".globl main\n";
-  out << "    j main\n\n";
+  // Ponto de entrada: chama a main do usuario e encerra o programa
+  out << "main:\n";
+  out << "    jal f_main\n";
+  out << "    li $v0, 10\n";
+  out << "    syscall\n\n";
+
+  // Rotina de erro para divisao por zero em tempo de execucao
+  out << "_div_zero:\n";
+  out << "    la $a0, _msg_div\n";
+  out << "    li $v0, 4\n";
+  out << "    syscall\n";
+  out << "    li $v0, 10\n";
+  out << "    syscall\n\n";
 
   gerarFuncoes(raiz);
 
   out.close();
+  if (out.fail()) {
+    std::cerr << "Erro ao gravar arquivo de saida MIPS: " << arquivoSaida << std::endl;
+    return false;
+  }
   return true;
 }
 
 void GeradorMIPS::gerarGlobais(ASTNode * raiz) {
   out << ".data\n";
   out << "    _newline: .asciiz \"\\n\"\n";
+  out << "    _msg_div: .asciiz \"Erro: divisao por zero\\n\"\n";
   out << "    .align 2\n";
 
   ASTNode * atual = raiz;
@@ -78,9 +95,9 @@ void GeradorMIPS::gerarGlobais(ASTNode * raiz) {
     if (atual -> kind == NODE_VAR_DECL) {
       globais[atual -> nome] = atual -> eh_array;
       if (atual -> eh_array) {
-        out << "    " << atual -> nome << ": .space " << (atual -> tamanho_array * 4) << "\n";
+        out << "    g_" << atual -> nome << ": .space " << (atual -> tamanho_array * 4) << "\n";
       } else {
-        out << "    " << atual -> nome << ": .word 0\n";
+        out << "    g_" << atual -> nome << ": .word 0\n";
       }
     }
     atual = atual -> irmao;
@@ -104,7 +121,11 @@ void GeradorMIPS::gerarFuncao(ASTNode * funNode) {
   offsetLocalAtual = 0;
 
   ASTNode * param = (funNode -> filhos.size() > 0) ? funNode -> filhos.at(0) : nullptr;
-  int paramOffset = 8;
+  // Os argumentos sao empilhados da esquerda para a direita,
+  // entao o primeiro parametro fica no endereco mais alto
+  int qtdParams = 0;
+  for (ASTNode * q = param; q != nullptr; q = q -> irmao) qtdParams++;
+  int paramOffset = 8 + 4 * (qtdParams - 1);
   while (param != nullptr) {
     LocalVarInfo info;
     info.offset = paramOffset;
@@ -112,7 +133,7 @@ void GeradorMIPS::gerarFuncao(ASTNode * funNode) {
     info.eh_param = true;
     escoposLocais.back()[param -> nome] = info;
 
-    paramOffset += 4;
+    paramOffset -= 4;
     param = param -> irmao;
   }
 
@@ -120,7 +141,7 @@ void GeradorMIPS::gerarFuncao(ASTNode * funNode) {
   int espacoLocais = calcularEspacoLocais(corpo);
 
   out << "# Funcao: " << funcaoAtual << "\n";
-  out << funcaoAtual << ":\n";
+  out << "f_" << funcaoAtual << ":\n";   // prefixo evita colisao com instrucoes
   out << "    subu $sp, $sp, 8\n";
   out << "    sw $fp, 4($sp)\n";
   out << "    sw $ra, 0($sp)\n";
@@ -133,17 +154,13 @@ void GeradorMIPS::gerarFuncao(ASTNode * funNode) {
     gerarComposto(corpo, false);
   }
 
-  out << funcaoAtual << "_fim:\n";
-  if (funcaoAtual == "main") {
-    out << "    li $v0, 10\n";
-    out << "    syscall\n\n";
-  } else {
-    out << "    move $sp, $fp\n";
-    out << "    lw $ra, 0($sp)\n";
-    out << "    lw $fp, 4($sp)\n";
-    out << "    addu $sp, $sp, 8\n";
-    out << "    jr $ra\n\n";
-  }
+  // Epilogo igual para todas as funcoes, inclusive main
+  out << "f_" << funcaoAtual << "_fim:\n";
+  out << "    move $sp, $fp\n";
+  out << "    lw $ra, 0($sp)\n";
+  out << "    lw $fp, 4($sp)\n";
+  out << "    addu $sp, $sp, 8\n";
+  out << "    jr $ra\n\n";
 
   sairEscopoLocal();
 }
@@ -242,7 +259,7 @@ void GeradorMIPS::gerarReturn(ASTNode * retNode) {
     gerarExpressao(retNode -> filhos.at(0));
     out << "    move $v0, $t0\n";
   }
-  out << "    j " << funcaoAtual << "_fim\n";
+  out << "    j f_" << funcaoAtual << "_fim\n";
 }
 
 void GeradorMIPS::gerarEnderecoVar(ASTNode * varNode) {
@@ -252,10 +269,12 @@ void GeradorMIPS::gerarEnderecoVar(ASTNode * varNode) {
     if (local -> eh_array && local -> eh_param) {
       out << "    lw $t2, " << local -> offset << "($fp)\n";
     } else {
-      out << "    addiu $t2, $fp, " << local -> offset << "\n";
+      // li + addu aceita deslocamentos maiores que 16 bits
+      out << "    li $t2, " << local -> offset << "\n";
+      out << "    addu $t2, $fp, $t2\n";
     }
   } else {
-    out << "    la $t2, " << varNode -> nome << "\n";
+    out << "    la $t2, g_" << varNode -> nome << "\n";
   }
 
   if (varNode -> eh_array && !varNode -> filhos.empty()) {
@@ -332,15 +351,16 @@ void GeradorMIPS::gerarOp(ASTNode * opNode) {
 
   switch (opNode -> op) {
   case SOMA:
-    out << "    add $t0, $t1, $t0\n";
+    out << "    addu $t0, $t1, $t0\n";
     break;
   case SUB:
-    out << "    sub $t0, $t1, $t0\n";
+    out << "    subu $t0, $t1, $t0\n";
     break;
   case MULT:
     out << "    mul $t0, $t1, $t0\n";
     break;
   case DIV:
+    out << "    beq $t0, $zero, _div_zero\n";
     out << "    div $t1, $t0\n";
     out << "    mflo $t0\n";
     break;
@@ -394,12 +414,13 @@ void GeradorMIPS::gerarCall(ASTNode * callNode) {
     arg = arg -> irmao;
   }
   int qtdArgs = (int) args.size();
-  for (int i = qtdArgs - 1; i >= 0; --i) {
+  // Avalia e empilha na ordem em que aparecem no codigo
+  for (int i = 0; i < qtdArgs; ++i) {
     gerarExpressao(args.at(i));
     out << "    subu $sp, $sp, 4\n";
     out << "    sw $t0, 0($sp)\n";
   }
-  out << "    jal " << callNode -> nome << "\n";
+  out << "    jal f_" << callNode -> nome << "\n";
   if (!args.empty()) {
     out << "    addu $sp, $sp, " << (args.size() * 4) << "\n";
   }
