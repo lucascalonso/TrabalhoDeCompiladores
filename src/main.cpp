@@ -96,6 +96,8 @@ int main(int argc, char *argv[]) {
     std::cout << "\n--- AST DECORADA (POS-ANALISE SEMANTICA) ---" << std::endl;
     imprimirAST(raiz_ast);
 
+    analisador.imprimirTabelaDeSimbolos();
+
     int errosSem = analisador.getErrosSemanticos();
     int avisosSem = analisador.getAvisos();
 
